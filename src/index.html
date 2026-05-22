@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--FAVICON-->
+<title>OL · ATLAS</title>
+<!--FOUC_SCRIPT-->
+<!--BUILD_INFO-->
+<!--STYLES-->
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<header id="header">
+  <!-- 모바일 햄버거 버튼 -->
+  <button class="h-hamburger" id="h-hamburger" aria-label="메뉴 열기" aria-expanded="false">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
+  </button>
+  <div class="h-brand" onclick="switchView('home')" style="cursor:pointer" role="button" tabindex="0" aria-label="홈으로">
+    <div class="h-brand-mark">
+      <em>OL</em>
+      <span class="h-brand-mark-info">ATLAS</span>
+    </div>
+    <!-- <div class="h-brand-sub" style="margin-left:0.5rem;">Knowledge Base</div> -->
+  </div>
+  <nav class="h-nav">
+    <button class="h-nav-btn" data-view="kanban">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="7" height="18" x="3" y="3" rx="1"></rect>
+        <rect width="7" height="18" x="14" y="3" rx="1"></rect>
+     <!--    <rect width="7" height="9" x="14" y="12" rx="1"/>
+        <rect width="7" height="5" x="3" y="16" rx="1"/> -->
+      </svg>
+      칸반 보드
+    </button>
+    <button class="h-nav-btn" data-view="cards">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+      카드 뷰
+    </button>
+    <button class="h-nav-btn" data-view="list">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line></svg>
+      리스트 뷰
+    </button>
+    <button class="h-nav-btn" data-view="document">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>
+      문서뷰
+    </button>
+  </nav>
+  <div class="h-right">
+    <!-- 모바일 전용 검색 아이콘 버튼 -->
+    <button class="h-search-mobile-btn" id="h-search-mobile-btn" aria-label="검색">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+    </button>
+
+    <!-- 데스크탑 검색 -->
+    <div class="h-search-wrap">
+      <span class="h-search-icon" id="h-search-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      </span>
+      <input class="h-search-input" id="h-search-input" type="text" placeholder="본문 검색...">
+      <button class="h-search-clear" id="h-search-clear" title="지우기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+      <span class="h-search-kbd" id="h-search-kbd" aria-hidden="true">⌘K</span>
+    </div>
+
+    <!-- 저장 드롭다운 -->
+    <div class="h-dropdown" id="save-dropdown">
+      <button class="h-dropdown-trigger" id="save-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+        저장
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="h-dropdown-menu" role="menu">
+        <button class="h-dropdown-item" id="export-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+          OL 파일로 저장 (.html)
+        </button>
+        <button class="h-dropdown-item" id="export-json-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          JSON 내보내기
+        </button>
+        <button class="h-dropdown-item" id="export-md-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="4" x2="20" y1="12" y2="12"></line></svg>
+          마크다운 내보내기 (단일 파일)
+        </button>
+        <button class="h-dropdown-item" id="export-md-each-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" x2="15" y1="13" y2="13"></line><line x1="9" x2="15" y1="17" y2="17"></line></svg>
+          마크다운 내보내기 (개별 파일)
+        </button>
+      </div>
+    </div>
+
+    <!-- 파일 열기 드롭다운 -->
+    <div class="h-dropdown" id="open-dropdown">
+      <button class="h-dropdown-trigger" id="open-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+        파일 열기
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="h-dropdown-menu" role="menu">
+        <button class="h-dropdown-item" id="import-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+          OL 파일 열기 (.html)
+        </button>
+        <button class="h-dropdown-item" id="import-json-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13h2l2 5 2-8 2 5h2"></path></svg>
+          카드 JSON 가져오기 (병합)
+        </button>
+        <button class="h-dropdown-item" id="import-md-btn" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+          마크다운 파일 가져오기 (.md)
+        </button>
+      </div>
+    </div>
+
+    <!-- hidden file inputs -->
+    <input type="file" id="import-file" accept=".html" style="display:none">
+    <input type="file" id="import-json-file" accept=".json" style="display:none">
+    <input type="file" id="import-md-file" accept=".md,.markdown,text/markdown" multiple="" style="display:none">
+    <button class="theme-toggle" id="theme-toggle" title="라이트/다크 모드 전환">
+      <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+      <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+    </button>
+  </div>
+</header>
+
+<!-- 검색 결과 드롭다운 -->
+<div id="search-dropdown">
+  <div class="sd-header">
+    <span class="sd-keyword" id="sd-keyword"></span>
+    <span class="sd-count" id="sd-count"></span>
+  </div>
+  <div class="sd-list" id="sd-list"></div>
+  <div class="sd-footer">
+    <!--
+      검색 결과 키보드 네비게이션은 v19에서 제거됨 (마우스 클릭 사용)
+      ↑↓/↵ 안내는 주석 처리. Esc 안내만 유지.
+    <span class="sd-foot-item">
+      <kbd class="sd-kbd">↑</kbd><kbd class="sd-kbd">↓</kbd>
+      <span>이동</span>
+    </span>
+    <span class="sd-foot-item">
+      <kbd class="sd-kbd">↵</kbd>
+      <span>선택</span>
+    </span>
+    -->
+    <span class="sd-foot-item">
+      <kbd class="sd-kbd">Esc</kbd>
+      <span>닫기</span>
+    </span>
+  </div>
+</div>
+
+<!-- 사이드바 모바일 오버레이 -->
+<div id="sb-overlay" class="sb-overlay"></div>
+
+<!-- 모바일 검색 오버레이 -->
+<div id="mobile-search-overlay" class="mobile-search-overlay">
+  <div class="mso-inner">
+    <div class="mso-input-wrap">
+      <svg class="mso-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input class="mso-input" id="mso-input" type="text" placeholder="본문 검색..." autocomplete="off">
+      <button class="mso-cancel" id="mso-cancel">취소</button>
+    </div>
+    <div class="mso-results" id="mso-results"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     APP
+══════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <!-- 모바일 전용: 사이드바 상단 컨트롤 블록 -->
+    <div class="sb-mobile-panel" id="sb-mobile-panel">
+      <!-- OL 로고 -->
+      <div class="sb-logo" id="sb-mobile-logo" style="cursor:pointer" role="button" tabindex="0" aria-label="홈으로">
+        <div class="sb-logo-mark">
+          <!-- <span class="sb-logo-ol">올</span> -->
+          <span class="sb-logo-en">OL</span>
+        </div>
+        <div class="sb-logo-info">
+          <div class="sb-logo-title" id="sb-logo-title">OL ATLAS</div>
+          <!-- <div class="sb-logo-by">by <a href="https://olbit.org" target="_blank" rel="noopener">olbit.org</a></div> -->
+          <div class="sb-logo-by">Weaving the Wisdom</div>
+        </div>
+      </div>
+      <!-- 액션 버튼 행 -->
+      <div class="sb-mp-actions">
+        <button class="sb-mp-btn" id="sb-mp-theme">
+          <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+          <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+          <span id="sb-mp-theme-label">다크 모드</span>
+        </button>
+        <!-- 저장 드롭다운 (모바일) -->
+        <div class="sb-mp-dropdown" id="sb-save-dropdown">
+          <button class="sb-mp-dropdown-trigger" id="sb-save-trigger">
+            저장
+          </button>
+          <div class="sb-mp-dropdown-menu">
+            <button class="sb-mp-dropdown-item" id="sb-mp-export">
+              파일 저장
+            </button>
+            <button class="sb-mp-dropdown-item" id="sb-mp-export-json">
+              JSON 내보내기
+            </button>
+            <button class="sb-mp-dropdown-item" id="sb-mp-export-md">
+              마크다운 내보내기 (단일)
+            </button>
+            <button class="sb-mp-dropdown-item" id="sb-mp-export-md-each">
+              각 카드를 개별 .md로
+            </button>
+          </div>
+        </div>
+
+        <!-- 파일 열기 드롭다운 (모바일) -->
+        <div class="sb-mp-dropdown" id="sb-open-dropdown">
+          <button class="sb-mp-dropdown-trigger" id="sb-open-trigger">
+            열기
+          </button>
+          <div class="sb-mp-dropdown-menu">
+            <button class="sb-mp-dropdown-item" id="sb-mp-import">
+              파일 열기
+            </button>
+            <button class="sb-mp-dropdown-item" id="sb-mp-import-json">
+              JSON 가져오기
+            </button>
+            <button class="sb-mp-dropdown-item" id="sb-mp-import-md">
+              마크다운 가져오기 (.md)
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="sb-mp-divider"></div>
+    </div>
+    <div id="sb-inner"></div>
+  </aside>
+
+  <div id="main">
+
+    <!-- ① 칸반 -->
+    <div class="view" id="view-kanban">
+      <div class="view-bar">
+        <span class="view-bar-title">칸반 보드</span>
+        <div class="view-toggle">
+          <button class="vt-btn active" onclick="switchView('kanban')">칸반</button>
+          <button class="vt-btn" onclick="switchView('cards')">카드</button>
+        </div>
+        <div class="vb-spacer"></div>
+        <button class="btn pri sm" id="new-card-btn">+ 카드 추가</button>
+        <button class="btn sm" id="add-col-btn">+ 컬럼</button>
+      </div>
+      <div id="kb-board-wrap">
+        <div id="kb-board"></div>
+      </div>
+    </div>
+
+    <!-- ② 카드 그리드 -->
+    <div class="view" id="view-cards">
+      <div class="view-bar">
+        <span class="view-bar-title">카드 뷰</span>
+        <div class="view-toggle">
+          <button class="vt-btn" onclick="switchView('kanban')">칸반</button>
+          <button class="vt-btn active" onclick="switchView('cards')">카드</button>
+        </div>
+        <div class="vb-spacer"></div>
+        <!-- 컬럼 필터 chip (사이드바 컬럼 선택 시 표시) -->
+        <span class="cg-active-col-chip" id="cg-active-col-chip">
+          <span class="cg-chip-dot" id="cg-chip-dot"></span>
+          <span class="cg-chip-name" id="cg-chip-name"></span>
+          <button class="cg-chip-clear" id="cg-chip-clear" title="컬럼 필터 해제">×</button>
+        </span>
+        <div class="tag-filter-wrap" id="tag-filter-wrap" style="display:none">
+          <button class="tag-filter-btn" id="tag-filter-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.875rem;height:0.875rem;flex-shrink:0;color:hsl(var(--muted-foreground))"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" x2="7.01" y1="7" y2="7"></line></svg>
+            <span id="tag-filter-label">태그 필터</span>
+            <span class="tag-filter-badge" id="tag-filter-badge" style="display:none">0</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;flex-shrink:0;color:hsl(var(--muted-foreground));margin-left:0.125rem"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div class="tag-filter-dropdown" id="tag-filter-dropdown">
+            <div class="tfd-header">
+              <span class="tfd-label">태그 선택 (다중)</span>
+              <button class="tfd-clear" id="tfd-clear-btn">전체 해제</button>
+            </div>
+            <div id="tfd-items"></div>
+          </div>
+        </div>
+        <select class="filter-sel" id="cg-fg"><option value="">모든 그룹</option></select>
+        <select class="filter-sel" id="cg-fs">
+          <option value="">모든 상태</option>
+          <option value="wait">학습대기</option>
+          <option value="doing">학습중</option>
+          <option value="done">학습완료</option>
+        </select>
+        <select class="filter-sel" id="cg-sort">
+          <option value="default">칸반 순서</option>
+          <option value="title">제목순</option>
+          <option value="priority">우선순위순</option>
+          <option value="status">학습상태순</option>
+          <option value="created">생성순</option>
+        </select>
+        <button class="bulk-select-all-btn" id="cg-select-all">전체 선택</button>
+      </div>
+      <!-- 카드 뷰 일괄 작업 액션바 -->
+      <div class="bulk-actions-bar" id="cg-bulk-bar">
+        <span class="bulk-count" id="cg-bulk-count">0개 선택</span>
+        <span class="bulk-sep"></span>
+        <div style="position:relative">
+          <button class="bulk-action-btn" id="cg-bulk-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            그룹
+          </button>
+        </div>
+        <div style="position:relative">
+          <button class="bulk-action-btn" id="cg-bulk-col">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="18" x="3" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="16" rx="1"></rect></svg>
+            컬럼
+          </button>
+        </div>
+        <div style="position:relative">
+          <button class="bulk-action-btn" id="cg-bulk-status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            상태
+          </button>
+        </div>
+        <span class="bulk-sep"></span>
+        <button class="bulk-action-btn" id="cg-bulk-md">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+          MD 내보내기
+        </button>
+        <button class="bulk-action-btn danger" id="cg-bulk-del">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+          삭제
+        </button>
+        <button class="bulk-action-close" id="cg-bulk-close" title="선택 해제">✕</button>
+      </div>
+      <div id="cg-grid" class="cg-grid"></div>
+    </div>
+
+    <!-- ③ 리스트 -->
+    <div class="view" id="view-list">
+      <div class="view-bar">
+        <span class="view-bar-title">리스트 뷰</span>
+        <div class="vb-spacer"></div>
+        <div style="position:relative">
+          <button class="lv-col-config-btn" id="lv-col-config-btn" title="컬럼 표시/순서 설정">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            컬럼
+          </button>
+        </div>
+        <select class="filter-sel" id="lv-fg"><option value="">모든 그룹</option></select>
+        <select class="filter-sel" id="lv-fs">
+          <option value="">모든 상태</option>
+          <option value="wait">학습대기</option>
+          <option value="doing">학습중</option>
+          <option value="done">학습완료</option>
+        </select>
+      </div>
+      <!-- 리스트 뷰 일괄 작업 액션바 -->
+      <div class="bulk-actions-bar" id="lv-bulk-bar">
+        <span class="bulk-count" id="lv-bulk-count">0개 선택</span>
+        <span class="bulk-sep"></span>
+        <div style="position:relative">
+          <button class="bulk-action-btn" id="lv-bulk-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            그룹
+          </button>
+        </div>
+        <div style="position:relative">
+          <button class="bulk-action-btn" id="lv-bulk-col">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="18" x="3" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="16" rx="1"></rect></svg>
+            컬럼
+          </button>
+        </div>
+        <div style="position:relative">
+          <button class="bulk-action-btn" id="lv-bulk-status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            상태
+          </button>
+        </div>
+        <span class="bulk-sep"></span>
+        <button class="bulk-action-btn" id="lv-bulk-md">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+          MD 내보내기
+        </button>
+        <button class="bulk-action-btn danger" id="lv-bulk-del">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+          삭제
+        </button>
+        <button class="bulk-action-close" id="lv-bulk-close" title="선택 해제">✕</button>
+      </div>
+      <div class="lv-wrap">
+        <table class="lv-table">
+          <thead id="lv-head"></thead>
+          <tbody id="lv-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ④ Document View (Phase 4) -->
+    <div class="view" id="view-document">
+      <div class="view-bar">
+        <span class="view-bar-title" id="dv-bar-title">문서뷰</span>
+        <span class="dv-bar-pos" id="dv-bar-pos"></span>
+        <div class="vb-spacer"></div>
+        <button class="btn sm" id="dv-edit-btn" title="이 카드 편집 (Ctrl+E)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          편집
+        </button>
+      </div>
+      <div class="dv-layout">
+        <div class="dv-wrap" id="dv-wrap"></div>
+        <aside class="dv-toc" id="dv-toc" aria-label="목차" style="display:none"></aside>
+      </div>
+    </div>
+
+    <!-- ⑤ About -->
+    <div class="view" id="view-about">
+      <div class="view-bar">
+        <span class="view-bar-title">About</span>
+      </div>
+      <div class="about-wrap" id="about-inner"></div>
+    </div>
+
+    <!-- ⑥ Home (Landing) -->
+    <div class="view" id="view-home">
+      <div class="view-bar">
+        <span class="view-bar-title">홈</span>
+        <div class="vb-spacer"></div>
+        <button class="btn pri sm" id="home-start-btn">칸반으로 시작</button>
+      </div>
+      <div class="home-wrap" id="home-inner"></div>
+    </div>
+
+    <!-- v1.5: 휴지통 뷰 -->
+    <div class="view" id="view-trash">
+      <div class="view-bar">
+        <span class="view-bar-title">휴지통</span>
+        <div class="vb-spacer"></div>
+        <button class="btn sm" id="trash-restore-sel-btn" style="display:none">선택 복원</button>
+        <button class="btn sm danger" id="trash-del-sel-btn" style="display:none">선택 영구삭제</button>
+        <button class="btn sm danger" id="trash-empty-btn">전체 비우기</button>
+      </div>
+      <div class="trash-toolbar">
+        <label class="trash-check-all">
+          <input type="checkbox" id="trash-check-all"> <span>전체 선택</span>
+        </label>
+        <input type="text" class="trash-search" id="trash-search" placeholder="검색...">
+      </div>
+      <div class="trash-list" id="trash-list"></div>
+    </div>
+
+  </div><!-- #main -->
+</div><!-- #app -->
+
+<!-- 병합 전략 모달 -->
+<div class="overlay" id="merge-modal">
+  <div class="modal" style="width:420px">
+    <button class="modal-close" id="merge-modal-close" aria-label="닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+    </button>
+    <div class="modal-title">가져오기 — 중복 처리</div>
+    <div class="modal-desc" id="merge-modal-desc"></div>
+
+    <!-- 중복 카드 요약 -->
+    <div id="merge-dup-summary" style="
+      background: hsl(var(--muted)); border-radius: calc(var(--radius) - 2px);
+      padding: 0.625rem 0.75rem; margin-bottom: 1rem;
+      font-size: 0.8125rem; color: hsl(var(--muted-foreground));
+      display: none;
+    ">
+      <span id="merge-dup-text"></span>
+    </div>
+
+    <!-- 전략 선택 -->
+    <div class="field" style="margin-bottom:0">
+      <label style="font-size:0.8125rem;font-weight:500;color:hsl(var(--foreground));display:block;margin-bottom:0.625rem">중복 카드 처리 방식</label>
+      <div style="display:flex;flex-direction:column;gap:0.5rem" id="merge-strategy-group">
+
+        <label class="merge-radio-item" id="mri-skip">
+          <input type="radio" name="merge-strategy" value="skip" checked="">
+          <div class="merge-radio-content">
+            <span class="merge-radio-label">건너뜀 <span class="merge-radio-badge">기본값</span></span>
+            <span class="merge-radio-desc">기존 카드를 유지하고 중복 항목은 추가하지 않습니다</span>
+          </div>
+        </label>
+
+        <label class="merge-radio-item" id="mri-overwrite">
+          <input type="radio" name="merge-strategy" value="overwrite">
+          <div class="merge-radio-content">
+            <span class="merge-radio-label">덮어쓰기</span>
+            <span class="merge-radio-desc">중복 카드를 가져오는 파일의 내용으로 교체합니다</span>
+          </div>
+        </label>
+
+        <label class="merge-radio-item" id="mri-keepboth">
+          <input type="radio" name="merge-strategy" value="keepboth">
+          <div class="merge-radio-content">
+            <span class="merge-radio-label">둘 다 추가</span>
+            <span class="merge-radio-desc">중복 여부와 관계없이 모든 카드를 추가합니다</span>
+          </div>
+        </label>
+
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn sm" id="merge-cancel-btn">취소</button>
+      <button class="btn pri sm" id="merge-confirm-btn">가져오기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 카드 모달 -->
+<div class="overlay" id="card-modal">
+  <div class="modal">
+    <button class="modal-close" id="cm-close" aria-label="닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+    </button>
+
+    <!-- 헤더: 제목 + 우측 액션 버튼 -->
+    <div class="cm-header">
+      <div class="cm-header-left">
+        <div class="modal-title" id="cm-title">새 카드</div>
+        <div class="modal-desc">카드 정보를 입력하고 저장하세요.</div>
+      </div>
+      <div class="cm-header-actions">
+        <!-- 문서뷰 버튼 -->
+        <button class="cm-docview-btn" id="cm-docview-btn" title="이 카드를 문서뷰로 보기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          문서뷰
+        </button>
+      </div>
+    </div>
+
+    <div class="field"><label>제목<span class="field-req" aria-label="필수">*</span></label><input type="text" id="cm-t" placeholder="카드 제목..."></div>
+
+    <!-- 본문: 마크다운 에디터 (툴바 + 분할 미리보기) -->
+    <div class="field" id="cm-body-field">
+      <label class="cm-body-label">내용</label>
+      <div class="md-editor" id="cm-b-md-wrap">
+        <div class="md-toolbar" role="toolbar" aria-label="마크다운 서식 도구">
+          <button type="button" class="md-tb-btn" data-md="h1" title="제목 1"><span class="md-tb-text">H1</span></button>
+          <button type="button" class="md-tb-btn" data-md="h2" title="제목 2"><span class="md-tb-text">H2</span></button>
+          <button type="button" class="md-tb-btn" data-md="h3" title="제목 3"><span class="md-tb-text">H3</span></button>
+          <span class="md-tb-sep"></span>
+          <button type="button" class="md-tb-btn" data-md="bold" title="굵게 (Ctrl+B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8"></path><path d="M15 20a4 4 0 0 0 0-8H6v8Z"></path></svg></button>
+          <button type="button" class="md-tb-btn" data-md="italic" title="기울임 (Ctrl+I)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="10" y1="4" y2="4"></line><line x1="14" x2="5" y1="20" y2="20"></line><line x1="15" x2="9" y1="4" y2="20"></line></svg></button>
+          <button type="button" class="md-tb-btn" data-md="strike" title="취소선"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4H9a3 3 0 0 0-2.83 4"></path><path d="M14 12a4 4 0 0 1 0 8H6"></path><line x1="4" x2="20" y1="12" y2="12"></line></svg></button>
+          <button type="button" class="md-tb-btn" data-md="code" title="인라인 코드"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></button>
+          <span class="md-tb-sep"></span>
+          <button type="button" class="md-tb-btn" data-md="quote" title="인용"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path></svg></button>
+          <button type="button" class="md-tb-btn" data-md="ul" title="불릿 목록"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line></svg></button>
+          <button type="button" class="md-tb-btn" data-md="ol" title="번호 목록"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="21" y1="6" y2="6"></line><line x1="10" x2="21" y1="12" y2="12"></line><line x1="10" x2="21" y1="18" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></button>
+          <button type="button" class="md-tb-btn" data-md="check" title="체크박스"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></button>
+          <span class="md-tb-sep"></span>
+          <button type="button" class="md-tb-btn" data-md="link" title="링크"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
+          <button type="button" class="md-tb-btn" data-md="image" title="이미지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg></button>
+          <button type="button" class="md-tb-btn" data-md="hr" title="구분선"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line></svg></button>
+          <!-- 모드 토글 배지 -->
+          <div class="md-mode-toggle" id="cm-mode-toggle">
+            <button type="button" class="md-mode-btn" id="cm-mode-write" data-mode="write" title="편집 모드">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+              편집
+            </button>
+            <button type="button" class="md-mode-btn active" id="cm-mode-preview" data-mode="preview" title="미리보기 모드">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              미리보기
+            </button>
+          </div>
+        </div>
+        <div class="md-split-pane mode-preview" id="cm-split-pane">
+          <div class="md-editor-pane">
+            <textarea id="cm-b-md" class="cm-body-md" placeholder="마크다운으로 입력하세요...
+
+빈 줄에서 / 를 입력하면 블록 메뉴가 열립니다.
+
+예) # 제목
+**굵게** *기울임* `코드`
+- 목록 항목"></textarea>
+          </div>
+          <div class="md-preview-pane">
+            <div class="md-preview-body" id="cm-md-preview">
+              <div class="md-preview-empty">미리보기가 여기에 표시됩니다</div>
+            </div>
+          </div>
+        </div>
+        <div class="md-slash-menu" id="md-slash-menu" role="listbox" aria-label="블록 메뉴"></div>
+      </div>
+    </div>
+
+    <!-- v1.5: 이미지 편집 패널 — 이미지가 있을 때만 표시 -->
+    <div class="field" id="cm-img-panel" style="display:none">
+      <label>이미지 목록 <span class="field-hint">(클릭하여 주소/파일 수정)</span></label>
+      <div class="cm-img-list" id="cm-img-list"></div>
+    </div>
+    <div class="field"><label>그룹</label><input type="text" id="cm-g" placeholder="예: 불교철학, 번역, 개발"></div>
+    <div class="field"><label>태그 <span class="field-hint">(쉼표로 구분)</span></label><input type="text" id="cm-tags" placeholder="예: 화엄, 연기, 중관"></div>
+    <div class="field">
+      <label>슬러그 <span class="field-hint">(URL 식별자, 비워두면 제목에서 자동 생성)</span></label>
+      <input type="text" id="cm-slug" placeholder="예: 중관학-번역-1장" maxlength="60">
+    </div>
+    <div class="field"><label>컬럼</label><select id="cm-col" class="cm-select"></select></div>
+    <div class="field">
+      <label>우선순위</label>
+      <div class="pri-row">
+        <button class="pri-btn" data-p="high">높음</button>
+        <button class="pri-btn" data-p="mid">보통</button>
+        <button class="pri-btn" data-p="low">낮음</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>학습 상태</label>
+      <div class="status-row" id="cm-status-row">
+        <button class="status-btn" data-s="wait">학습대기</button>
+        <button class="status-btn" data-s="doing">학습중</button>
+        <button class="status-btn" data-s="done">학습완료</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger sm cm-del-btn" id="cm-del" style="display:none">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        삭제
+      </button>
+      <button class="btn sm" id="cm-md-export" title="이 카드를 마크다운 파일로 내보내기" style="display:none">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+        .md
+      </button>
+      <button class="btn sm" id="cm-cancel">취소</button>
+      <button class="btn pri sm" id="cm-save">
+        저장
+        <kbd class="kbd-hint">⌘↵</kbd>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 마크다운 이미지 삽입 다이얼로그 -->
+<div class="overlay" id="md-image-dialog" role="dialog" aria-modal="true" aria-labelledby="md-img-title">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" id="md-img-close" aria-label="닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+    </button>
+    <div class="modal-title" id="md-img-title">이미지 삽입</div>
+    <div class="modal-desc">URL을 직접 입력하거나, 이미지 파일을 업로드하세요.</div>
+
+    <div class="md-img-tabs" role="tablist">
+      <button type="button" class="md-img-tab active" data-tab="url" role="tab">URL</button>
+      <button type="button" class="md-img-tab" data-tab="file" role="tab">파일 업로드</button>
+    </div>
+
+    <!-- URL 탭 -->
+    <div class="md-img-pane" data-pane="url">
+      <div class="field"><label>이미지 URL</label><input type="url" id="md-img-url" placeholder="https://example.com/image.png"></div>
+      <div class="field"><label>대체 텍스트 (alt)</label><input type="text" id="md-img-url-alt" placeholder="이미지 설명"></div>
+    </div>
+
+    <!-- 파일 탭 -->
+    <div class="md-img-pane" data-pane="file" style="display:none">
+      <div class="field"><label>이미지 파일</label><input type="file" id="md-img-file" accept="image/*"></div>
+      <div class="field"><label>대체 텍스트 (alt)</label><input type="text" id="md-img-file-alt" placeholder="이미지 설명"></div>
+      <div class="md-img-warn" id="md-img-warn" style="display:none"></div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn" id="md-img-cancel">취소</button>
+      <button class="btn pri" id="md-img-insert">삽입</button>
+    </div>
+  </div>
+</div>
+
+<!-- 마크다운 링크 삽입 popover -->
+<div id="md-link-popover" class="md-link-popover" role="dialog" aria-labelledby="md-link-title">
+  <div class="md-link-title" id="md-link-title">링크 삽입</div>
+  <div class="field"><label>표시 텍스트</label><input type="text" id="md-link-text" placeholder="링크 텍스트"></div>
+  <div class="field"><label>URL</label><input type="url" id="md-link-url" placeholder="https://example.com"></div>
+  <div class="md-link-foot">
+    <button class="btn sm" id="md-link-cancel">취소</button>
+    <button class="btn sm pri" id="md-link-insert">삽입</button>
+  </div>
+</div>
+
+<!-- 컬러 피커 -->
+<div id="cpicker"></div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+<!--DATA_VAR-->
+<!--SCRIPTS-->
+</body>
+</html>

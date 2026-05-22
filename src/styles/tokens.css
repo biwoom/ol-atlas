@@ -1,0 +1,66 @@
+/* ══════════════════════════════════════════
+   shadcn/ui DESIGN TOKENS (Phase 1)
+   HSL 변수 시스템 - 라이트/다크 모드 지원
+══════════════════════════════════════════ */
+:root {
+  --background:           0 0% 100%;
+  --foreground:           0 0% 3.9%;
+  --card:                 0 0% 100%;
+  --card-foreground:      0 0% 3.9%;
+  --popover:              0 0% 100%;
+  --popover-foreground:   0 0% 3.9%;
+  --primary:              0 0% 9%;
+  --primary-foreground:   0 0% 98%;
+  --secondary:            0 0% 96.1%;
+  --secondary-foreground: 0 0% 9%;
+  --muted:                0 0% 96.1%;
+  --muted-foreground:     0 0% 45.1%;
+  --accent:               0 0% 96.1%;
+  --accent-foreground:    0 0% 9%;
+  --destructive:          0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border:               0 0% 89.8%;
+  --input:                0 0% 89.8%;
+  --ring:                 0 0% 3.9%;
+
+  /* 시맨틱 컬러 (변경이력, 우선순위, 학습상태용) */
+  --success:              142 71% 45%;
+  --warning:              38 92% 50%;
+  --info:                 217 91% 60%;
+
+  --radius: 0.5rem;
+
+  /* 레이아웃 */
+  --header-h:  56px;
+  --sidebar-w: 256px;
+}
+
+/* iOS Safari :root 특이성 충돌 방지:
+   :root = (0,1,0), .dark = (0,1,0) → 동일 특이성에서 iOS Safari가 :root 우선시하는 버그
+   html.dark = (0,1,1) → :root보다 특이성 높아 확실히 덮어씀 */
+html.dark,
+:root.dark {
+  --background:           0 0% 3.9%;
+  --foreground:           0 0% 98%;
+  --card:                 0 0% 3.9%;
+  --card-foreground:      0 0% 98%;
+  --popover:              0 0% 3.9%;
+  --popover-foreground:   0 0% 98%;
+  --primary:              0 0% 98%;
+  --primary-foreground:   0 0% 9%;
+  --secondary:            0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted:                0 0% 14.9%;
+  --muted-foreground:     0 0% 63.9%;
+  --accent:               0 0% 14.9%;
+  --accent-foreground:    0 0% 98%;
+  --destructive:          0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border:               0 0% 14.9%;
+  --input:                0 0% 14.9%;
+  --ring:                 0 0% 83.1%;
+
+  --success:              142 71% 45%;
+  --warning:              38 92% 50%;
+  --info:                 217 91% 60%;
+}

@@ -1,0 +1,13 @@
+{
+  "name": "ol-atlas",
+  "version": "0.7.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build/build.mjs",
+    "dev": "node build/build.mjs --dev",
+    "inline": "node build/inline.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

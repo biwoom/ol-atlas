@@ -1,0 +1,51 @@
+/* ══════════════════════════════════════════
+   BASE
+══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+* { border-color: hsl(var(--border)); }
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  background: hsl(var(--background));
+}
+/* iOS Safari CSS 변수 재계산 버그 대응:
+   hsl(var(--background)) 변경 시 재렌더가 안 되는 경우를 위해
+   html.dark / body 배경·텍스트 색을 직접 명시 */
+html.dark { background: hsl(0 0% 3.9%); }
+html.dark body {
+  background: hsl(0 0% 3.9%);
+  color: hsl(0 0% 98%);
+}
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont,
+    "Pretendard Variable", "Pretendard",
+    "Apple SD Gothic Neo", "Noto Sans KR",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  font-size: 0.875rem; /* 14px — 기본 본문 크기 */
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 4px; }
+button { cursor: pointer; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* kbd 기본 reset (브라우저 기본 monospace/작은 글자 무력화 — 우리 클래스가 통제) */
+kbd {
+  font: inherit;
+  line-height: 1;
+}

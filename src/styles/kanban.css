@@ -1,0 +1,296 @@
+/* ══════════════════════════════════════════
+   MAIN
+══════════════════════════════════════════ */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1; min-width: 0;
+}
+
+/* ══════════════════════════════════════════
+   VIEW WRAPPER
+══════════════════════════════════════════ */
+.view { display: none; }
+.view.active {
+  display: block;
+  min-height: calc(100vh - var(--header-h));
+}
+
+/* ══════════════════════════════════════════
+   VIEW TOOLBAR
+══════════════════════════════════════════ */
+.view-bar {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  position: sticky; top: var(--header-h); z-index: 20;
+  flex-wrap: wrap;
+}
+.view-bar-title {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard Variable", "Apple SD Gothic Neo", sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  letter-spacing: -0.01em;
+}
+.vb-spacer { flex: 1; min-width: 0.2rem; }
+
+/* ── filter-sel: shadcn Select 스타일 ── */
+.filter-sel {
+  display: inline-flex; align-items: center;
+  height: 2rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: 0 0.625rem;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--input));
+  border-radius: calc(var(--radius) - 4px);
+  color: hsl(var(--foreground));
+  outline: none;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.375rem center;
+  padding-right: 1.75rem;
+}
+.filter-sel:focus-visible {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.15);
+}
+
+/* ── view toggle: shadcn ToggleGroup 스타일 ── */
+.view-toggle {
+  display: inline-flex; gap: 0.125rem;
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 4px);
+  padding: 0.1875rem;
+  height: 2rem;
+}
+.vt-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0 0.625rem;
+  border: none;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border-radius: calc(var(--radius) - 6px);
+  transition: background-color .15s, color .15s;
+  cursor: pointer;
+}
+.vt-btn:hover { color: hsl(var(--foreground)); }
+.vt-btn.active {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* ══════════════════════════════════════════
+   ① KANBAN VIEW (Phase 3 - shadcn Card 패턴)
+══════════════════════════════════════════ */
+#view-kanban { min-height: calc(100vh - var(--header-h)); }
+#view-kanban.active { display: flex; flex-direction: column; }
+
+#kb-board-wrap {
+  flex: 1; overflow-x: auto;
+  padding: 1.25rem 1.5rem 3.75rem;
+}
+#kb-board {
+  display: flex; gap: 0.875rem; align-items: flex-start;
+  min-width: max-content;
+}
+
+/* ── 컬럼: shadcn Card (muted 배경) ─────── */
+.kb-col {
+  width: 17rem; flex-shrink: 0;
+  background: hsl(var(--muted) / 0.4);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - var(--header-h) - 6.25rem);
+  transition: border-color .15s, background-color .15s;
+}
+.kb-col.drag-over {
+  border-color: hsl(var(--ring));
+  background: hsl(var(--accent));
+}
+
+.kb-col-head {
+  padding: 0.6875rem 0.75rem 0.625rem;
+  display: flex; align-items: center; gap: 0.5rem;
+  flex-shrink: 0;
+}
+.kb-col-dot {
+  width: 0.5rem; height: 0.5rem; border-radius: 50%;
+  flex-shrink: 0; cursor: pointer;
+  transition: transform .15s;
+}
+.kb-col-dot:hover { transform: scale(1.25); }
+.kb-col-name {
+  font-family: inherit;
+  font-size: 0.8125rem; font-weight: 600;
+  color: hsl(var(--foreground));
+  letter-spacing: -0.01em;
+  flex: 1; border: none; background: transparent;
+  outline: none; min-width: 0; cursor: text;
+  padding: 0.125rem 0.25rem;
+  border-radius: calc(var(--radius) - 4px);
+  transition: background-color .15s;
+}
+.kb-col-name:hover { background: hsl(var(--background) / 0.5); }
+.kb-col-name:focus {
+  background: hsl(var(--background));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.15);
+}
+.kb-col-cnt {
+  display: inline-flex; align-items: center;
+  font-size: 0.625rem; font-weight: 500; /* 10px */
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 9999px;
+  padding: 0 0.4375rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.kb-col-acts { display: flex; gap: 0.125rem; flex-shrink: 0; }
+.kb-col-btn {
+  width: 1.5rem; height: 1.5rem;
+  border: none; background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  border-radius: calc(var(--radius) - 4px);
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .15s, color .15s;
+}
+.kb-col-btn:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.kb-cards {
+  flex: 1; overflow-y: auto;
+  padding: 0.25rem 0.5rem 0.25rem;
+  display: flex; flex-direction: column; gap: 0.4375rem;
+  min-height: 2.75rem;
+}
+
+/* ── 카드: shadcn Card (작은 변형) ──────── */
+.kb-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.625rem 0.6875rem 0.5625rem 0.75rem;
+  cursor: grab; position: relative;
+  user-select: none;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  transition: box-shadow .15s, border-color .15s, transform .1s;
+}
+.kb-card:active { cursor: grabbing; }
+.kb-card:hover {
+  border-color: hsl(var(--foreground) / 0.2);
+  box-shadow: 0 2px 6px -1px rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06);
+  transform: translateY(-1px);
+}
+.kb-card.dragging {
+  opacity: .4;
+  transform: scale(.98);
+  cursor: grabbing;
+}
+.kb-card.drag-ph {
+  background: hsl(var(--accent));
+  border: 1px dashed hsl(var(--ring) / 0.4);
+  box-shadow: none;
+  min-height: 3.25rem;
+}
+
+/* 우선순위 좌측 1px 보더 (정밀) */
+.kb-card-bar {
+  position: absolute; left: 0; top: 0.5rem; bottom: 0.5rem;
+  width: 2px;
+  border-radius: 2px;
+}
+.kb-card-title {
+  font-size: 0.8125rem; font-weight: 600;
+  color: hsl(var(--foreground));
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.005em;
+  word-break: break-word;
+  padding-right: 1.25rem; /* edit 버튼 자리 */
+}
+.kb-card-body {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.55;
+  margin-bottom: 0.4375rem;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.kb-card-foot {
+  display: flex; align-items: center; gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.kb-card-date {
+  font-size: 0.625rem;           /* 10px */
+  color: hsl(var(--muted-foreground));
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.kb-card-edit {
+  position: absolute; top: 0.375rem; right: 0.375rem;
+  width: 1.25rem; height: 1.25rem;
+  border: none; background: transparent;
+  color: hsl(var(--muted-foreground));
+  border-radius: calc(var(--radius) - 4px);
+  display: none; align-items: center; justify-content: center;
+  transition: background-color .12s, color .12s;
+}
+.kb-card:hover .kb-card-edit { display: flex; }
+.kb-card-edit:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+.kb-card-edit svg { width: 0.75rem; height: 0.75rem; }
+
+.kb-add-card {
+  margin: 0.125rem 0.5rem 0.5rem;
+  padding: 0.4375rem;
+  border: 1px dashed hsl(var(--border));
+  background: transparent;
+  border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--muted-foreground));
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background-color .15s, color .15s, border-color .15s;
+  text-align: center;
+  flex-shrink: 0;
+}
+.kb-add-card:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-color: hsl(var(--foreground) / 0.2);
+}
+
+#kb-add-col-btn {
+  width: 2.75rem; flex-shrink: 0;
+  background: transparent;
+  border: 1px dashed hsl(var(--border));
+  border-radius: var(--radius);
+  color: hsl(var(--muted-foreground));
+  font-size: 1.25rem;
+  transition: background-color .15s, color .15s, border-color .15s;
+  align-self: stretch;
+  min-height: 5.625rem;
+}
+#kb-add-col-btn:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-color: hsl(var(--foreground) / 0.2);
+}
