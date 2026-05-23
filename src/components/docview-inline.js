@@ -2,10 +2,16 @@
 // ── 문서뷰 인라인 편집 (Phase 5) ─────────────────────
 
 // 문서뷰에서 다른 카드로 이동
-function goToDocCard(cardId) {
+async function goToDocCard(cardId) {
   // Phase 5: 인라인 편집 중이고 변경이 있으면 confirm
   if (dvEditing && isDvEditDirty()) {
-    if (!confirm('변경 사항이 저장되지 않았습니다. 다른 카드로 이동하시겠습니까?')) return;
+    const ok = await customConfirm({
+      title: '카드 이동',
+      message: '저장되지 않은 변경사항이 있습니다.\n다른 카드로 이동하시겠습니까?',
+      confirmText: '이동',
+      cancelText: '취소',
+    });
+    if (!ok) return;
   }
   // 편집 모드 강제 종료 (저장 안 됨)
   dvEditing = false;
@@ -365,10 +371,16 @@ function saveInlineEdit() {
 }
 
 // 취소
-function cancelInlineEdit() {
+async function cancelInlineEdit() {
   if (!dvEditing) return;
   if (isDvEditDirty()) {
-    if (!confirm('변경 사항을 버리시겠습니까?')) return;
+    const ok = await customConfirm({
+      title: '편집 취소',
+      message: '변경사항을 버리시겠습니까?',
+      confirmText: '버리기',
+      cancelText: '계속 편집',
+    });
+    if (!ok) return;
   }
   dvEditing = false;
   dvEditOriginal = '';

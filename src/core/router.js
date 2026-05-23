@@ -8,10 +8,28 @@ let currentView = 'kanban';
 let currentDocCardId = null;  // Phase 4: 문서뷰에서 현재 보고 있는 카드 ID
 
 function switchView(v) {
-  // 문서뷰 인라인 편집 중에 다른 뷰로 떠나려 하면 가드
-  if (currentView === 'document' && v !== 'document' && dvEditing && isDvEditDirty()) {
-    if (!confirm('변경 사항이 저장되지 않았습니다. 다른 뷰로 이동하시겠습니까?')) return;
+  // 문서뷰 인라인 편집 중에 다른 뷰로 떠나려 하면 가드 (async 경로로 위임)
+  if (currentView === 'document' && v !== 'document'
+      && typeof dvEditing !== 'undefined' && dvEditing
+      && typeof isDvEditDirty === 'function' && isDvEditDirty()) {
+    _switchViewAsync(v);
+    return;
   }
+  _switchViewCore(v);
+}
+
+async function _switchViewAsync(v) {
+  const ok = await customConfirm({
+    title: '뷰 전환',
+    message: '저장되지 않은 변경사항이 있습니다.\n다른 뷰로 이동하시겠습니까?',
+    confirmText: '이동',
+    cancelText: '취소',
+  });
+  if (!ok) return;
+  _switchViewCore(v);
+}
+
+function _switchViewCore(v) {
   if (v !== 'document') {
     dvEditing = false;
     dvEditOriginal = '';

@@ -19,7 +19,12 @@ function storageSave() {
     devLog('STORAGE', 'save: ' + (json.length / 1024).toFixed(1) + ' KB in ' + (performance.now() - t0).toFixed(1) + 'ms');
   } catch(err) {
     console.error('[STORAGE] save failed:', err);
-    alert('저장 실패: ' + err.message);
+    customAlert({
+      title: '저장 실패',
+      message: '저장 중 오류가 발생했습니다:\n' + (err.message || String(err)),
+      danger: true,
+    });
+    // await 불필요 — 오류 알림 후 흐름 계속
   }
 }
 
