@@ -57,8 +57,17 @@ function _trashRestoreCard(id) {
   toast('복원되었습니다');
 }
 
-function _trashDelCard(id) {
+async function _trashDelCard(id) {
   id = Number(id);
+  const ok = await customConfirm({
+    title: '⚠ 영구 삭제',
+    message: '이 카드를 영구적으로 삭제합니다.\n\n되돌릴 수 없습니다.',
+    confirmText: '영구 삭제',
+    cancelText: '취소',
+    danger: true,
+    defaultCancel: true,
+  });
+  if (!ok) return;
   dispatch(purgeCard(id));
   toast('영구 삭제되었습니다');
 }
@@ -79,10 +88,7 @@ function initTrashHandlers() {
     const delId     = e.target.closest('[data-trash-del]')?.dataset.trashDel;
     const cb        = e.target.closest('.trash-cb');
     if (restoreId) { _trashRestoreCard(restoreId); return; }
-    if (delId) {
-      if (!confirm('영구 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
-      _trashDelCard(delId); return;
-    }
+    if (delId) { _trashDelCard(delId); return; }
     if (cb) { _updateTrashSelButtons(); }
   });
 
@@ -93,18 +99,34 @@ function initTrashHandlers() {
   });
 
   // 선택 영구삭제
-  document.getElementById('trash-del-sel-btn').addEventListener('click', () => {
+  document.getElementById('trash-del-sel-btn').addEventListener('click', async function() {
     const ids = [...document.querySelectorAll('.trash-cb:checked')].map(cb => Number(cb.dataset.id));
     if (!ids.length) return;
-    if (!confirm(ids.length + '개 카드를 영구 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+    const ok = await customConfirm({
+      title: '⚠ 영구 삭제',
+      message: ids.length + '개 카드를 영구적으로 삭제합니다.\n\n되돌릴 수 없습니다.',
+      confirmText: '영구 삭제',
+      cancelText: '취소',
+      danger: true,
+      defaultCancel: true,
+    });
+    if (!ok) return;
     ids.forEach(id => dispatch(purgeCard(Number(id))));
     toast('영구 삭제되었습니다');
   });
 
   // 전체 비우기
-  document.getElementById('trash-empty-btn').addEventListener('click', () => {
+  document.getElementById('trash-empty-btn').addEventListener('click', async function() {
     if (!(S.trash || []).length) { toast('이미 비어 있습니다'); return; }
-    if (!confirm('휴지통을 완전히 비우시겠습니까? 되돌릴 수 없습니다.')) return;
+    const ok = await customConfirm({
+      title: '⚠ 휴지통 비우기',
+      message: '휴지통의 모든 카드를 영구적으로 삭제합니다.\n\n되돌릴 수 없습니다.',
+      confirmText: '모두 삭제',
+      cancelText: '취소',
+      danger: true,
+      defaultCancel: true,
+    });
+    if (!ok) return;
     dispatch(purgeAllCards());
     toast('휴지통을 비웠습니다');
   });

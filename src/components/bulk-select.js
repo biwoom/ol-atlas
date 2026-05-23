@@ -45,10 +45,16 @@ function rerenderAfterBulk() {
   queueRender('sidebar');
 }
 
-function _bsDeleteCards(view) {
+async function _bsDeleteCards(view) {
   const sel = getBulkSet(view);
   if (!sel.size) return;
-  if (!confirm('선택한 ' + sel.size + '개 카드를 휴지통으로 이동하시겠습니까?')) return;
+  const ok = await customConfirm({
+    title: '선택 카드 삭제',
+    message: `선택한 ${sel.size}개 카드를 휴지통으로 이동하시겠습니까?\n\n휴지통에서 복원할 수 있습니다.`,
+    confirmText: '휴지통으로',
+    cancelText: '취소',
+  });
+  if (!ok) return;
   const ids = [...sel];
   // 문서뷰에서 삭제된 카드 보고 있으면 초기화 (모듈 전역 변수)
   if (ids.includes(currentDocCardId)) currentDocCardId = null;

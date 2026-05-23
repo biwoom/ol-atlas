@@ -161,9 +161,15 @@ function saveCard() {
   closeCardModal();
 }
 
-function _cmDeleteCard() {
+async function _cmDeleteCard() {
   if (!editCard) return;
-  if (!confirm('이 카드를 휴지통으로 이동하시겠습니까?')) return;
+  const ok = await customConfirm({
+    title: '카드 삭제',
+    message: '이 카드를 휴지통으로 이동하시겠습니까?\n\n휴지통에서 복원할 수 있습니다.',
+    confirmText: '휴지통으로',
+    cancelText: '취소',
+  });
+  if (!ok) return;
   const deletedId = editCard.id;
 
   dispatch(deleteCard(deletedId));

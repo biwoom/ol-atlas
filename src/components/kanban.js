@@ -153,10 +153,20 @@ function addColumn() {
   dispatch(createColumn({ title: '새 컬럼', color }));
   toast('컬럼이 추가되었습니다');
 }
-function _kbDeleteColumn(colId) {
-  const cnt = S.cards.filter(c=>c.colId===colId).length;
-  const msg = cnt ? `이 컬럼에는 ${cnt}개의 카드가 있습니다. 모두 삭제됩니다. 계속하시겠습니까?` : '이 컬럼을 삭제하시겠습니까?';
-  if (!confirm(msg)) return;
+async function _kbDeleteColumn(colId) {
+  const cnt = S.cards.filter(c => c.colId === colId).length;
+  const message = cnt
+    ? `이 컬럼에는 ${cnt}개의 카드가 있습니다.\n컬럼과 카드 모두 삭제됩니다. 계속하시겠습니까?`
+    : '이 컬럼을 삭제하시겠습니까?';
+  const ok = await customConfirm({
+    title: '컬럼 삭제',
+    message,
+    confirmText: '삭제',
+    cancelText: '취소',
+    danger: cnt > 0,
+    defaultCancel: cnt > 0,
+  });
+  if (!ok) return;
   dispatch(deleteColumn(colId));
   toast('컬럼이 삭제되었습니다');
 }
