@@ -1,0 +1,40 @@
+/* src/components/shared/dirty-indicator.css */
+
+.dirty-ind {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  line-height: 1;
+  transition: opacity 400ms ease;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.dirty-ind-dirty {
+  background: hsl(38 90% 90%);
+  color: hsl(38 60% 28%);
+  opacity: 1;
+}
+.dirty-ind-clean {
+  background: hsl(142 60% 90%);
+  color: hsl(142 40% 26%);
+  opacity: 0.85;
+}
+.dirty-ind-hidden { opacity: 0; }
+
+:root.dark .dirty-ind-dirty { background: hsl(38 40% 20%); color: hsl(38 80% 68%); }
+:root.dark .dirty-ind-clean { background: hsl(142 25% 18%); color: hsl(142 50% 65%); }
+
+.dirty-ind-floating {
+  position: fixed;
+  bottom: 4.5rem;
+  right: 1rem;
+  z-index: 150;
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.15);
+  pointer-events: none;
+}

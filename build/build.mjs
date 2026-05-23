@@ -36,6 +36,8 @@ const JS_FILES = [
   'core/schema.js',        //  3. migrate, getSchemaVersion (dev 의존)
   'core/storage.js',       //  4. storageSave, storageLoad, save, load (store+dev 의존)
   'core/dirty.js',         //  5. markDirty, markClean, isDirty, installBeforeUnloadGuard
+  'components/shared/confirm-modal.js',   //  5a. customConfirm, customAlert (다른 컴포넌트보다 먼저)
+  'components/shared/dirty-indicator.js', //  5b. renderDirtyIndicator (dirty.js 뒤)
   'core/action.js',        //  6. dispatch, registerReducer (store+dirty+render-queue 의존)
 
   // core (순서 중요)

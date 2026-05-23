@@ -13,6 +13,7 @@ function markDirty() {
     devLog('DIRTY', 'state marked dirty');
   }
   _scheduleAutosave();
+  queueRender('dirty-indicator');
 }
 
 function markClean() {
@@ -22,6 +23,7 @@ function markClean() {
   s.meta.dirty = false;
   s.meta.lastSavedAt = new Date().toISOString();
   devLog('DIRTY', 'state marked clean', s.meta.lastSavedAt);
+  queueRender('dirty-indicator');
 }
 
 function _scheduleAutosave() {

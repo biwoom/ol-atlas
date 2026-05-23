@@ -62,6 +62,8 @@ const CSS_FILES = [
   'styles/listview.css',
   'styles/docview.css',
   'styles/modal.css',
+  'components/shared/confirm-modal.css',   // Phase 7.x: 커스텀 모달
+  'components/shared/dirty-indicator.css', // Phase 7.x: dirty 인디케이터
 ];
 
 export async function inline({ isDev = false } = {}) {
