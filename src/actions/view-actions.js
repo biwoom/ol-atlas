@@ -1,18 +1,15 @@
 // src/actions/view-actions.js
 // ── 뷰 상태 액션 + reducer ────────────────────────────
-// Phase 2: currentView/prefixFilter 등은 모듈 전역 변수로 S 외부에 있음.
-// S 안의 settings(sidebarOpen, boardWidth 등)는 Phase 3+ UI에서 활성화.
-// Phase 2에서는 reducer stub만 등록.
 
-// ── Action Types ──────────────────────────────────────
-const VIEW_CHANGE        = 'VIEW_CHANGE';
-const BOARD_WIDTH_SET    = 'BOARD_WIDTH_SET';
-const META_TOGGLE_SET    = 'META_TOGGLE_SET';
-const SIDEBAR_OPEN_SET   = 'SIDEBAR_OPEN_SET';
+import { devLog } from '../core/dev.js';
+import { registerReducer } from '../core/action.js';
 
-// ── Action Creators ───────────────────────────────────
+export const VIEW_CHANGE        = 'VIEW_CHANGE';
+export const BOARD_WIDTH_SET    = 'BOARD_WIDTH_SET';
+export const META_TOGGLE_SET    = 'META_TOGGLE_SET';
+export const SIDEBAR_OPEN_SET   = 'SIDEBAR_OPEN_SET';
 
-function changeView(viewName) {
+export function changeView(viewName) {
   return {
     type: VIEW_CHANGE,
     payload: { view: viewName },
@@ -20,7 +17,7 @@ function changeView(viewName) {
   };
 }
 
-function setBoardWidth(width) {
+export function setBoardWidth(width) {
   return {
     type: BOARD_WIDTH_SET,
     payload: { width },
@@ -28,7 +25,7 @@ function setBoardWidth(width) {
   };
 }
 
-function setMetaToggle(key, value) {
+export function setMetaToggle(key, value) {
   return {
     type: META_TOGGLE_SET,
     payload: { key, value },
@@ -36,7 +33,7 @@ function setMetaToggle(key, value) {
   };
 }
 
-function setSidebarOpen(open) {
+export function setSidebarOpen(open) {
   return {
     type: SIDEBAR_OPEN_SET,
     payload: { open },
@@ -44,7 +41,6 @@ function setSidebarOpen(open) {
   };
 }
 
-// ── Reducer ───────────────────────────────────────────
 function viewReducer(state, action) {
   switch (action.type) {
 

@@ -1,11 +1,28 @@
 // src/components/listview.js
 // ── 리스트 뷰 ────────────────────────────────────────
 
-let lvSort = { col:'title', dir:1 };
-let cgSort = (function(){ try { return localStorage.getItem('ol_cg_sort')||'default'; } catch(_){ return 'default'; } })();
+import { S }                        from '../../core/state.js';
+import { dispatch }                 from '../../core/action.js';
+import { updateCard, setStatus }    from '../../actions/card-actions.js';
+import { ce }                       from '../../core/utils.js';
+import { buildEmptyState }          from '../../core/normalize.js';
+import { cardPreviewText }          from '../../core/body-helpers.js';
+import { queueRender }              from '../../core/render-queue.js';
+import { subscribe }                from '../../core/store.js';
+import { lvSelected, updateBulkBar, initBulkBar } from './bulk-select.js';
+import { openCardModal }            from './card-modal.js';
+import { openDocCard }              from '../shared/docview.js';
 
-// ── 리스트뷰 컬럼 설정 ────────────────────────────────
-const LV_COL_DEFS = [
+let lvSort = { col:'title', dir:1 };
+
+export let cgSort = (function(){ try { return localStorage.getItem('ol_cg_sort')||'default'; } catch(_){ return 'default'; } })();
+export function getCgSort() { return cgSort; }
+export function setCgSort(v) {
+  cgSort = v;
+  try { localStorage.setItem('ol_cg_sort', cgSort); } catch(_){}
+}
+
+export const LV_COL_DEFS = [
   { key:'group',    label:'그룹',    sortable:true,  fixed:false },
   { key:'title',    label:'제목',    sortable:true,  fixed:false },
   { key:'body',     label:'내용',    sortable:true,  fixed:false },
@@ -14,26 +31,25 @@ const LV_COL_DEFS = [
   { key:'status',   label:'학습',    sortable:true,  fixed:false },
   { key:'docview',  label:'열기',    sortable:false, fixed:true  },
 ];
+
 function _loadLvCols() {
   try {
     const raw = localStorage.getItem('ol_lv_cols');
     if (!raw) return null;
     const saved = JSON.parse(raw);
-    // 저장된 key 목록이 유효한지 검증 후 병합
     const validKeys = LV_COL_DEFS.map(d=>d.key);
     const out = saved.filter(r => validKeys.includes(r.key));
-    // 저장에 없는 new key는 끝에 추가
     validKeys.forEach(k => { if (!out.find(r=>r.key===k)) out.push({key:k,visible:true}); });
     return out;
   } catch(_) { return null; }
 }
-function _saveLvCols() {
+
+export function _saveLvCols() {
   try { localStorage.setItem('ol_lv_cols', JSON.stringify(lvColConfig)); } catch(_){}
 }
-let lvColConfig = _loadLvCols() || LV_COL_DEFS.map(d=>({key:d.key, visible:true}));
-// ────────────────────────────────────────────────────────
 
-// ── 리스트뷰 인라인 편집 ─────────────────────────────
+export let lvColConfig = _loadLvCols() || LV_COL_DEFS.map(d=>({key:d.key, visible:true}));
+
 function startListCellEdit(td, card, field) {
   if (td.querySelector('.lv-inline-input,.lv-inline-select')) return;
   const originalHTML = td.innerHTML;
@@ -51,7 +67,6 @@ function startListCellEdit(td, card, field) {
       ? [['high','높음'],['mid','보통'],['low','낮음']]
       : [['wait','학습대기'],['doing','학습중'],['done','학습완료']];
 
-    // 커스텀 인라인 팝업 (body portal, fixed 위치)
     const pop = document.createElement('div');
     pop.className = 'cs-inline-pop';
 
@@ -85,7 +100,6 @@ function startListCellEdit(td, card, field) {
     td.classList.add('lv-editing');
     document.body.appendChild(pop);
 
-    // 위치 계산 (셀 좌표 기준, 화면 경계 보정)
     requestAnimationFrame(() => {
       const rect = td.getBoundingClientRect();
       const ph = pop.offsetHeight;
@@ -100,7 +114,6 @@ function startListCellEdit(td, card, field) {
       pop.style.width = Math.max(rect.width, pw) + 'px';
     });
 
-    // 외부 클릭 / 스크롤 / 리사이즈 → 닫힘
     closeHandler = e => {
       if (!pop.contains(e.target) && !td.contains(e.target)) closePopup();
     };
@@ -151,7 +164,6 @@ function startListCellEdit(td, card, field) {
   el.focus();
   if (!isSelect && el.select) el.select();
 }
-// ────────────────────────────────────────────────────────
 
 function renderList() {
   const fg = document.getElementById('lv-fg').value;
@@ -162,7 +174,6 @@ function renderList() {
   fgEl.innerHTML = '<option value="">모든 그룹</option>';
   groups.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; if(g===prev) o.selected=true; fgEl.appendChild(o); });
 
-  // 활성 컬럼 계산 (lvColConfig 순서 기준, visible인 것만)
   const activeCols = lvColConfig
     .filter(r => r.visible)
     .map(r => LV_COL_DEFS.find(d => d.key === r.key))
@@ -176,7 +187,6 @@ function renderList() {
   const ICO_DOWN = '<svg class="lv-sort-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>';
   const ICO_BOTH = '<svg class="lv-sort-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>';
 
-  // tbody 먼저 필터/정렬
   let cards = [...S.cards];
   if (fg) cards = cards.filter(c=>c.group===fg);
   if (fs) cards = cards.filter(c=>(S.userData.status[c.id]||'wait')===fs);
@@ -188,7 +198,6 @@ function renderList() {
     return va<vb?-lvSort.dir:va>vb?lvSort.dir:0;
   });
 
-  // 마스터 체크박스 th
   const masterTh = document.createElement('th');
   masterTh.className = 'lv-master-th';
   const masterCb = document.createElement('input');
@@ -207,7 +216,6 @@ function renderList() {
   masterTh.appendChild(masterCb);
   tr.appendChild(masterTh);
 
-  // 동적 컬럼 헤더
   activeCols.forEach(({ key, label, sortable }) => {
     const th = document.createElement('th');
     if (sortable) {
@@ -222,7 +230,6 @@ function renderList() {
   });
   thead.appendChild(tr);
 
-  // tbody
   const tbody = document.getElementById('lv-body');
   tbody.innerHTML = '';
   if (!cards.length) {
@@ -248,7 +255,6 @@ function renderList() {
     const tr2 = document.createElement('tr');
     if (lvSelected.has(card.id)) tr2.classList.add('selected');
 
-    // 체크박스 td
     const cbTd = document.createElement('td');
     cbTd.className = 'lv-cb-td';
     const cb = document.createElement('input');
@@ -268,12 +274,11 @@ function renderList() {
     cbTd.appendChild(cb);
     tr2.appendChild(cbTd);
 
-    // 동적 컬럼 td — key별 렌더
     const previewText = cardPreviewText(card);
 
     activeCols.forEach(({ key }) => {
       const td = document.createElement('td');
-      td.dataset.col = key; // 컬럼 키 마킹
+      td.dataset.col = key;
       switch (key) {
         case 'group':
           td.className = 'td-group lv-editable';
@@ -317,13 +322,11 @@ function renderList() {
         }
         case 'docview': {
           td.className = 'lv-action-td';
-          // 문서뷰 버튼
           const dvB = document.createElement('button');
           dvB.className = 'dv-go-btn';
           dvB.title = '문서뷰로 보기';
           dvB.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
           dvB.onclick = e => { e.stopPropagation(); openDocCard(card.id); };
-          // 모달 편집 버튼
           const editB = document.createElement('button');
           editB.className = 'lv-edit-btn';
           editB.title = '카드 모달 편집';
@@ -337,14 +340,11 @@ function renderList() {
       tr2.appendChild(td);
     });
 
-    // 행 클릭 모달 제거 — 편집은 각 셀 클릭, 모달은 열기 열의 버튼으로만
     tbody.appendChild(tr2);
   });
 
-  // 액션바 초기화 (최초 1회만)
   initBulkBar('lv');
   updateBulkBar('lv');
 }
 
-// Phase 1: store에 등록
 subscribe('list', renderList);

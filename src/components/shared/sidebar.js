@@ -1,28 +1,40 @@
 // src/components/sidebar.js
 // ── 사이드바 ──────────────────────────────────────────
 
+import { S }                        from '../../core/state.js';
+import { ce, escapeHTML }           from '../../core/utils.js';
+import { ICONS_X }                  from '../../core/constants.js';
+import { currentView, currentDocCardId } from '../../core/router.js';
+import { switchView }               from '../../core/router.js';
+import { selectedColId, setSelectedColId, selectedTags, sbFilter, setPrefixFilter, initCustomSelect } from '../../ui/custom-select.js';
+import { sbTagQuery, setSbTagQuery, sbDocExpanded, getAllTags } from '../../core/tag-filter.js';
+import { updateTagFilterBtn }       from '../../core/tag-filter.js';
+import { parseTag, buildPrefixIndex, getFreeTags } from '../../core/tag-parser.js';
+import { queueRender }              from '../../core/render-queue.js';
+import { subscribe }                from '../../core/store.js';
+import { SB_ICONS, buildAboutTrashSection } from './about.js';
+import { highlightText }            from '../../data/search/search.js';
+import { goToDocCard }              from './docview.js';
+
 function renderSidebar() {
   const el = document.getElementById('sb-inner');
   el.innerHTML = '';
 
-  // ✦ 문서뷰 전용 트리 사이드바
   if (currentView === 'document') {
     renderSidebarForDocView(el);
     return;
   }
 
-  // ── 1) 컬럼 (클릭 가능, 카드뷰 필터 연동) ──
   const activeColId = (currentView === 'cards') ? selectedColId : null;
   const sec2 = ce('div','sb-section');
   sec2.appendChild(ce('div','sb-label','컬럼'));
 
-  // "모든 컬럼" 항목
   const allColRow = ce('div', 'sb-col-row' + (activeColId === null && currentView === 'cards' ? ' active' : ''));
   const dotAll = ce('div','sb-col-dot sb-col-dot-all');
   const nmAll  = ce('span','sb-col-name','모든 컬럼');
   const cntAll = ce('span','sb-col-cnt', String(S.cards.length));
   allColRow.append(dotAll, nmAll, cntAll);
-  allColRow.onclick = () => { selectedColId = null; switchView('cards'); };
+  allColRow.onclick = () => { setSelectedColId(null); switchView('cards'); };
   sec2.appendChild(allColRow);
 
   S.columns.forEach(col => {
@@ -31,14 +43,13 @@ function renderSidebar() {
     const nm  = ce('span','sb-col-name', col.title);
     const cnt = ce('span','sb-col-cnt', String(S.cards.filter(c=>c.colId===col.id).length));
     row.append(dot, nm, cnt);
-    row.onclick = () => { selectedColId = col.id; switchView('cards'); };
+    row.onclick = () => { setSelectedColId(col.id); switchView('cards'); };
     sec2.appendChild(row);
   });
   el.appendChild(sec2);
 
   el.appendChild(ce('div','sb-divider'));
 
-  // ── 2) 그룹 ──
   const sec3 = ce('div','sb-section');
   sec3.appendChild(ce('div','sb-label','그룹'));
   const fgEl = document.getElementById('cg-fg');
@@ -61,16 +72,13 @@ function renderSidebar() {
 
   el.appendChild(ce('div','sb-divider'));
 
-  // ── 3) 태그 섹션 — prefix 태그 유무에 따라 분기 ──
   const prefixIndex = buildPrefixIndex(S.cards);
   const hasPrefixTags = Object.keys(prefixIndex).length > 0;
 
   if (hasPrefixTags) {
-    // prefix 태그 있음: 검색폼 + 자유태그 드롭다운 + prefix 드롭다운
     const prefixSection = document.createElement('div');
     prefixSection.id = 'sb-prefix-section';
 
-    // 태그 검색폼 — .sb-section 래퍼로 감싸 sec4와 동일한 패딩 맥락 유지
     const tsSection = ce('div', 'sb-section');
     const tsWrap = document.createElement('div');
     tsWrap.className = 'sb-tag-search';
@@ -89,11 +97,11 @@ function renderSidebar() {
       tsi.addEventListener('compositionstart', () => { _composing = true; });
       tsi.addEventListener('compositionend', e => {
         _composing = false;
-        sbTagQuery = e.target.value;
+        setSbTagQuery(e.target.value);
         setTimeout(() => { if (!_composing) queueRender('sidebar'); }, 0);
       });
       tsi.addEventListener('input', e => {
-        sbTagQuery = e.target.value;
+        setSbTagQuery(e.target.value);
         if (_composing) return;
         setTimeout(() => { if (!_composing) queueRender('sidebar'); }, 0);
       });
@@ -105,9 +113,8 @@ function renderSidebar() {
       }
     }
     const tsc = tsWrap.querySelector('#sb-tag-search-clear');
-    if (tsc) tsc.onclick = () => { sbTagQuery = ''; queueRender('sidebar'); };
+    if (tsc) tsc.onclick = () => { setSbTagQuery(''); queueRender('sidebar'); };
 
-    // 자유 태그 드롭다운 (prefix 없는 태그만)
     const freeTags = getFreeTags(S.cards);
     if (freeTags.length > 0) {
       const selectedFree = [...selectedTags].find(t => freeTags.includes(t)) || '';
@@ -123,7 +130,6 @@ function renderSidebar() {
       if (freeDropdown) prefixSection.appendChild(freeDropdown);
     }
 
-    // prefix 드롭다운 (데이터에 등장하는 것만)
     Object.keys(prefixIndex).forEach(prefix => {
       const selectedVal = (sbFilter.prefix && sbFilter.prefix.prefix === prefix)
         ? sbFilter.prefix.value : '';
@@ -137,7 +143,6 @@ function renderSidebar() {
 
     el.appendChild(prefixSection);
   } else {
-    // prefix 태그 없음: 기존 검색 가능한 태그 목록
     const sec4 = ce('div','sb-section sb-tag-section');
     const tagHead = ce('div','sb-tag-head');
     const tagHeadLabel = ce('span','sb-label','태그');
@@ -186,7 +191,7 @@ function renderSidebar() {
       tagCount.textContent = selectedTags.size + ' 선택됨';
       const clearAll = ce('button','sb-tag-clear-all','선택 해제');
       clearAll.onclick = () => {
-        selectedTags.clear(); sbTagQuery = '';
+        selectedTags.clear(); setSbTagQuery('');
         queueRender('sidebar');
         if (currentView === 'cards') { queueRender('cards'); updateTagFilterBtn(); }
       };
@@ -199,24 +204,22 @@ function renderSidebar() {
       let _composing = false;
       tsi.addEventListener('compositionstart', () => { _composing = true; });
       tsi.addEventListener('compositionend', e => {
-        _composing = false; sbTagQuery = e.target.value;
+        _composing = false; setSbTagQuery(e.target.value);
         refreshSbTagList(tagListEl, sec4); refreshSbTagClearBtn(sec4);
       });
       tsi.addEventListener('input', e => {
-        sbTagQuery = e.target.value;
+        setSbTagQuery(e.target.value);
         refreshSbTagList(tagListEl, sec4);
         if (!_composing) refreshSbTagClearBtn(sec4);
       });
     }
     const tsc = document.getElementById('sb-tag-search-clear');
-    if (tsc) tsc.onclick = () => { sbTagQuery = ''; queueRender('sidebar'); };
+    if (tsc) tsc.onclick = () => { setSbTagQuery(''); queueRender('sidebar'); };
   }
 
-  // ── 4) About 링크 ──
   el.appendChild(ce('div','sb-divider'));
   buildAboutTrashSection(el);
 
-  // ── 5) 푸터 메타 정보 ──
   el.appendChild(ce('div','sb-divider'));
   const meta = ce('div','sb-meta');
   meta.innerHTML = `
@@ -226,13 +229,10 @@ function renderSidebar() {
   el.appendChild(meta);
 }
 
-// 드롭다운 빌더
 function buildSbDropdown(label, key, values, selected, onChange) {
-  // sbTagQuery 필터링
   const q = (typeof sbTagQuery === 'string') ? sbTagQuery.trim().toLowerCase() : '';
   const filtered = q ? values.filter(v => v.toLowerCase().includes(q)) : values;
 
-  // 매칭 없으면 드롭다운 자체 숨김 (B 방식)
   if (q && filtered.length === 0) return null;
 
   const wrap = document.createElement('div');
@@ -242,7 +242,6 @@ function buildSbDropdown(label, key, values, selected, onChange) {
   title.className = 'sb-section-title';
   title.textContent = label;
 
-  // 히든 select (Proxy 패턴)
   const sel = document.createElement('select');
   sel.className = 'sb-select';
   sel.dataset.key = key;
@@ -265,19 +264,13 @@ function buildSbDropdown(label, key, values, selected, onChange) {
   wrap.appendChild(title);
   wrap.appendChild(sel);
 
-  // 커스텀 드롭다운으로 교체 (DOM 삽입 후 다음 프레임에)
   requestAnimationFrame(() => {
-    if (sel.isConnected && typeof initCustomSelect === 'function') {
-      initCustomSelect(sel);
-    }
+    if (sel.isConnected) initCustomSelect(sel);
   });
 
   return wrap;
 }
 
-// ── 태그 목록 부분 업데이트 헬퍼 (IME 문제 해결) ──────
-// 전체 사이드바를 재렌더하지 않고 태그 목록 영역만 교체.
-// 이렇게 하면 input 엘리먼트가 파괴되지 않아 IME 컨텍스트가 유지됨.
 function refreshSbTagList(tagListEl, sec4) {
   if (!tagListEl) return;
   const tagMap = getAllTags();
@@ -306,12 +299,10 @@ function refreshSbTagList(tagListEl, sec4) {
       tagListEl.appendChild(item);
     });
   }
-  // 선택 카운트 텍스트 갱신
   const countEl = sec4 && sec4.querySelector('.sb-tag-count');
   if (countEl) countEl.textContent = selectedTags.size > 0 ? selectedTags.size + ' 선택됨' : '';
 }
 
-// clear 버튼 표시/숨김만 갱신 (input DOM 건드리지 않음)
 function refreshSbTagClearBtn(sec4) {
   if (!sec4) return;
   const wrap = sec4.querySelector('.sb-tag-search');
@@ -323,14 +314,13 @@ function refreshSbTagClearBtn(sec4) {
     btn.id = 'sb-tag-search-clear';
     btn.setAttribute('aria-label', '지우기');
     btn.textContent = '×';
-    btn.onclick = () => { sbTagQuery = ''; queueRender('sidebar'); };
+    btn.onclick = () => { setSbTagQuery(''); queueRender('sidebar'); };
     wrap.appendChild(btn);
   } else if (!sbTagQuery && existing) {
     existing.remove();
   }
 }
 
-// ── Task 6: 문서뷰 전용 트리 사이드바 ──────────────
 function renderSidebarForDocView(rootEl) {
   const sec = ce('div','sb-section');
   sec.appendChild(ce('div','sb-label','문서 목록'));
@@ -413,7 +403,6 @@ function renderSidebarForDocView(rootEl) {
 
   rootEl.appendChild(sec);
 
-  // v1.5: About·휴지통 링크 추가
   rootEl.appendChild(ce('div','sb-divider'));
   buildAboutTrashSection(rootEl);
 
@@ -441,5 +430,4 @@ function buildDocTreeCard(card) {
   return item;
 }
 
-// Phase 1: store에 등록
 subscribe('sidebar', renderSidebar);

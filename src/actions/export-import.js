@@ -1,12 +1,25 @@
 // src/actions/export-import.js
-// ── 내보내기 / 가져오기 + 토스트 ────────────────────
+// ── 내보내기 / 가져오기 ───────────────────────────────
 
-// ══════════════════════════════════════════════════════
-//  EXPORT / IMPORT — 드롭다운 메뉴 제어
-// ══════════════════════════════════════════════════════
+import { applyState }                  from '../core/store.js';
+import { S }                           from '../core/state.js';
+import { dispatch }                    from '../core/action.js';
+import { normalizeState }              from '../core/normalize.js';
+import { migrate }                     from '../core/schema.js';
+import { bodyImagesToTokens, bodyTokensToStandardMd, slugFilename } from '../core/constants.js';
+import { today, dlBlob, toast }        from '../core/utils.js';
+import { currentView, switchView }     from '../core/router.js';
+import { queueRender }                 from '../core/render-queue.js';
+import { save }                        from '../core/storage.js';
+import { importMerge, VALID_PRIORITIES } from './card-actions.js';
+import { __STATIC_HTML__ }              from '../core/static-html.js';
+
+// ── 벌크 선택 핸들러 등록 (cross-layer 의존 방지) ────
+let _getBulkHandlers = null;
+export function registerBulkHandlers(fn) { _getBulkHandlers = fn; }
 
 // ── 드롭다운 열기/닫기 헬퍼 ──────────────────────────
-function closeAllDropdowns() {
+export function closeAllDropdowns() {
   document.querySelectorAll('.h-dropdown.open, .sb-mp-dropdown.open').forEach(d => {
     d.classList.remove('open');
     const trigger = d.querySelector('[aria-expanded]');
@@ -33,11 +46,13 @@ document.addEventListener('click', () => closeAllDropdowns());
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeAllDropdowns();
-    // 다중 선택 해제
-    if (currentView === 'cards' && cgSelected.size > 0) {
-      clearBulkSelection('cg'); closeBulkPopovers(); queueRender('cards');
-    } else if (currentView === 'list' && lvSelected.size > 0) {
-      clearBulkSelection('lv'); closeBulkPopovers(); queueRender('list');
+    if (_getBulkHandlers) {
+      const { cgSelected, lvSelected, clearBulkSelection, closeBulkPopovers } = _getBulkHandlers();
+      if (currentView === 'cards' && cgSelected.size > 0) {
+        clearBulkSelection('cg'); closeBulkPopovers(); queueRender('cards');
+      } else if (currentView === 'list' && lvSelected.size > 0) {
+        clearBulkSelection('lv'); closeBulkPopovers(); queueRender('list');
+      }
     }
   }
 });
@@ -46,15 +61,9 @@ document.addEventListener('keydown', e => {
 function safeFname() {
   return (S.meta.title || 'OL').replace(/[\\/:*?"<>|]/g, '').trim() || 'OL';
 }
-function dlBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
 
-// ── Task 3: 카드 한 장 → 마크다운 텍스트 (프런트매터 + 본문) ──
-function cardToMarkdownText(card) {
+// ── 카드 한 장 → 마크다운 텍스트 (프런트매터 + 본문) ──
+export function cardToMarkdownText(card) {
   const colMap = {};
   (S.columns || []).forEach(col => { colMap[col.id] = col.title; });
   const colName     = colMap[card.colId] || '';
@@ -68,135 +77,116 @@ function cardToMarkdownText(card) {
     'priority: '    + priority,
     'learnStatus: ' + learnStatus,
     'tags: ['       + (card.tags || []).map(t => JSON.stringify(t)).join(', ') + ']',
-    'slug: '        + JSON.stringify(card.slug || ''),   // v1.5
+    'slug: '        + JSON.stringify(card.slug || ''),
     'created: '     + (card.created || ''),
     '---',
   ].join('\n');
-  // v1.5: 토큰을 표준 ![alt](src)로 복원
   const body = bodyTokensToStandardMd(card);
   return fm + '\n\n' + body;
 }
 
-// 카드 배열 → 개별 .md 파일 순차 다운로드
 // ══════════════════════════════════════════════════════
-//  v1.5: 순수 JS ZIP 생성기 (외부 라이브러리 불필요)
+//  순수 JS ZIP 생성기 (외부 라이브러리 불필요)
 //  ZIP 포맷 스펙: APPNOTE.TXT 6.3.10
 // ══════════════════════════════════════════════════════
-(function() {
-  // CRC-32 테이블 (Castagnoli 방식, 256엔트리 × 4byte = 1KB)
-  const _crcTable = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) {
-    let c = i;
-    for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-    _crcTable[i] = c;
-  }
-  function crc32(buf) {
-    let crc = 0xFFFFFFFF;
-    for (let i = 0; i < buf.length; i++) crc = _crcTable[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
-    return (crc ^ 0xFFFFFFFF) >>> 0;
-  }
+const _crcTable = new Uint32Array(256);
+for (let i = 0; i < 256; i++) {
+  let c = i;
+  for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+  _crcTable[i] = c;
+}
+function _crc32(buf) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) crc = _crcTable[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
 
-  // UTF-8 인코더 (파일명 + 텍스트 데이터)
-  const _enc = new TextEncoder();
+const _enc = new TextEncoder();
+function _writeU16(view, offset, v) { view.setUint16(offset, v, true); }
+function _writeU32(view, offset, v) { view.setUint32(offset, v, true); }
 
-  // 리틀엔디언 정수 쓰기 헬퍼
-  function writeU16(view, offset, v) { view.setUint16(offset, v, true); }
-  function writeU32(view, offset, v) { view.setUint32(offset, v, true); }
+function makeZip(files) {
+  const localHeaders = [];
+  let offset = 0;
+  const parts = [];
 
-  /**
-   * makeZip(files) → Uint8Array
-   * files: [{ name: '파일명.md', data: string | Uint8Array }, ...]
-   */
-  function makeZip(files) {
-    const localHeaders = [];
-    let offset = 0;
-    const parts = [];
+  files.forEach(({ name, data }) => {
+    const nameBytes  = _enc.encode(name);
+    const dataBytes  = (typeof data === 'string') ? _enc.encode(data) : data;
+    const crc        = _crc32(dataBytes);
+    const compSize   = dataBytes.length;
+    const uncompSize = dataBytes.length;
 
-    files.forEach(({ name, data }) => {
-      const nameBytes  = _enc.encode(name);
-      const dataBytes  = (typeof data === 'string') ? _enc.encode(data) : data;
-      const crc        = crc32(dataBytes);
-      const compSize   = dataBytes.length;
-      const uncompSize = dataBytes.length;
+    const lhSize = 30 + nameBytes.length;
+    const lh = new Uint8Array(lhSize);
+    const lv = new DataView(lh.buffer);
+    _writeU32(lv, 0,  0x04034B50);
+    _writeU16(lv, 4,  20);
+    _writeU16(lv, 6,  0x0800);
+    _writeU16(lv, 8,  0);
+    _writeU16(lv, 10, 0);
+    _writeU16(lv, 12, 0);
+    _writeU32(lv, 14, crc);
+    _writeU32(lv, 18, compSize);
+    _writeU32(lv, 22, uncompSize);
+    _writeU16(lv, 26, nameBytes.length);
+    _writeU16(lv, 28, 0);
+    lh.set(nameBytes, 30);
 
-      // Local File Header (30 + nameLen bytes)
-      const lhSize = 30 + nameBytes.length;
-      const lh = new Uint8Array(lhSize);
-      const lv = new DataView(lh.buffer);
-      writeU32(lv, 0,  0x04034B50);   // signature
-      writeU16(lv, 4,  20);           // version needed: 2.0
-      writeU16(lv, 6,  0x0800);       // flag: UTF-8 encoding
-      writeU16(lv, 8,  0);            // compression: stored (no deflate)
-      writeU16(lv, 10, 0);            // mod time
-      writeU16(lv, 12, 0);            // mod date
-      writeU32(lv, 14, crc);
-      writeU32(lv, 18, compSize);
-      writeU32(lv, 22, uncompSize);
-      writeU16(lv, 26, nameBytes.length);
-      writeU16(lv, 28, 0);            // extra field length
-      lh.set(nameBytes, 30);
+    localHeaders.push({ nameBytes, crc, compSize, uncompSize, offset });
+    offset += lhSize + compSize;
+    parts.push(lh, dataBytes);
+  });
 
-      localHeaders.push({ nameBytes, crc, compSize, uncompSize, offset });
-      offset += lhSize + compSize;
-      parts.push(lh, dataBytes);
-    });
+  const cdStart = offset;
+  const cdParts = [];
+  localHeaders.forEach(({ nameBytes, crc, compSize, uncompSize, offset: localOffset }) => {
+    const cdSize = 46 + nameBytes.length;
+    const cd = new Uint8Array(cdSize);
+    const cv = new DataView(cd.buffer);
+    _writeU32(cv, 0,  0x02014B50);
+    _writeU16(cv, 4,  20);
+    _writeU16(cv, 6,  20);
+    _writeU16(cv, 8,  0x0800);
+    _writeU16(cv, 10, 0);
+    _writeU16(cv, 12, 0);
+    _writeU16(cv, 14, 0);
+    _writeU32(cv, 16, crc);
+    _writeU32(cv, 20, compSize);
+    _writeU32(cv, 24, uncompSize);
+    _writeU16(cv, 28, nameBytes.length);
+    _writeU16(cv, 30, 0);
+    _writeU16(cv, 32, 0);
+    _writeU16(cv, 34, 0);
+    _writeU16(cv, 36, 0);
+    _writeU32(cv, 38, 0);
+    _writeU32(cv, 42, localOffset);
+    cd.set(nameBytes, 46);
+    cdParts.push(cd);
+  });
 
-    // Central Directory
-    const cdStart = offset;
-    const cdParts = [];
-    localHeaders.forEach(({ nameBytes, crc, compSize, uncompSize, offset: localOffset }) => {
-      const cdSize = 46 + nameBytes.length;
-      const cd = new Uint8Array(cdSize);
-      const cv = new DataView(cd.buffer);
-      writeU32(cv, 0,  0x02014B50);   // signature
-      writeU16(cv, 4,  20);           // version made by
-      writeU16(cv, 6,  20);           // version needed
-      writeU16(cv, 8,  0x0800);       // flag: UTF-8
-      writeU16(cv, 10, 0);            // compression
-      writeU16(cv, 12, 0);            // mod time
-      writeU16(cv, 14, 0);            // mod date
-      writeU32(cv, 16, crc);
-      writeU32(cv, 20, compSize);
-      writeU32(cv, 24, uncompSize);
-      writeU16(cv, 28, nameBytes.length);
-      writeU16(cv, 30, 0);            // extra
-      writeU16(cv, 32, 0);            // comment
-      writeU16(cv, 34, 0);            // disk start
-      writeU16(cv, 36, 0);            // int attr
-      writeU32(cv, 38, 0);            // ext attr
-      writeU32(cv, 42, localOffset);
-      cd.set(nameBytes, 46);
-      cdParts.push(cd);
-    });
+  const cdSize = cdParts.reduce((s, c) => s + c.length, 0);
 
-    const cdSize = cdParts.reduce((s, c) => s + c.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  _writeU32(ev, 0,  0x06054B50);
+  _writeU16(ev, 4,  0);
+  _writeU16(ev, 6,  0);
+  _writeU16(ev, 8,  files.length);
+  _writeU16(ev, 10, files.length);
+  _writeU32(ev, 12, cdSize);
+  _writeU32(ev, 16, cdStart);
+  _writeU16(ev, 20, 0);
 
-    // End of Central Directory
-    const eocd = new Uint8Array(22);
-    const ev = new DataView(eocd.buffer);
-    writeU32(ev, 0,  0x06054B50);   // signature
-    writeU16(ev, 4,  0);            // disk number
-    writeU16(ev, 6,  0);            // disk with CD start
-    writeU16(ev, 8,  files.length); // entries on this disk
-    writeU16(ev, 10, files.length); // total entries
-    writeU32(ev, 12, cdSize);
-    writeU32(ev, 16, cdStart);
-    writeU16(ev, 20, 0);            // comment length
+  const all = [...parts, ...cdParts, eocd];
+  const total = all.reduce((s, a) => s + a.length, 0);
+  const result = new Uint8Array(total);
+  let pos = 0;
+  all.forEach(a => { result.set(a, pos); pos += a.length; });
+  return result;
+}
 
-    // 전체 합치기
-    const all = [...parts, ...cdParts, eocd];
-    const total = all.reduce((s, a) => s + a.length, 0);
-    const result = new Uint8Array(total);
-    let pos = 0;
-    all.forEach(a => { result.set(a, pos); pos += a.length; });
-    return result;
-  }
-
-  // 전역 노출
-  window._makeZip = makeZip;
-})();
-
-function exportCardsAsIndividualMd(cards) {
+export function exportCardsAsIndividualMd(cards) {
   if (!cards || !cards.length) { toast('내보낼 카드가 없습니다'); return; }
   const used = new Map();
   const files = cards.map(card => {
@@ -208,7 +198,7 @@ function exportCardsAsIndividualMd(cards) {
   });
 
   try {
-    const zipBytes = window._makeZip(files);
+    const zipBytes = makeZip(files);
     const zipBlob  = new Blob([zipBytes], { type: 'application/zip' });
     const zipName  = (S.meta.title ? slugFilename(S.meta.title, 'ol') : 'ol-export') +
                      '_' + new Date().toISOString().slice(0,10) + '.zip';
@@ -238,17 +228,11 @@ document.getElementById('export-btn').addEventListener('click', () => {
 });
 
 function buildExportHTML(json) {
-  // 1. JSON → Base64 (멀티바이트·특수문자 완전 안전)
   const b64 = btoa(unescape(encodeURIComponent(json)));
-
-  // 2. 페이지 로드 직후 캡처한 정적 원본 HTML 사용
+  // eslint-disable-next-line no-undef
   let src = __STATIC_HTML__;
-
-  // 3. export 시 dark 클래스 제거 (수신자 테마 독립)
   src = src.replace(/(<html[^>]*)\s+class="dark"/, '$1');
   src = src.replace(/(<html[^>]*class="[^"]*)(\bdark\b\s*)([^"]*)"/, (_, pre, _d, post) => `${pre}${post.trim()}"`);
-
-  // 4. LOADED_DATA 라인 교체 — ⚠️ 자기참조 방지용 분해 작성
   const VAR = '__LOADED' + '_DATA_B64__';
   const KEY = 'const ' + VAR + " = '";
   const RE  = new RegExp('const ' + VAR + " = '[^']*';");
@@ -314,7 +298,7 @@ document.getElementById('export-md-btn').addEventListener('click', () => {
   toast('마크다운을 내보냈습니다 (' + (S.cards||[]).length + '개)');
 });
 
-// ── Task 3: 각 카드를 개별 .md로 내보내기 ─────────────
+// ── 각 카드를 개별 .md로 내보내기 ─────────────────────
 document.getElementById('export-md-each-btn').addEventListener('click', () => {
   closeAllDropdowns();
   exportCardsAsIndividualMd(S.cards || []);
@@ -330,7 +314,6 @@ document.getElementById('import-file').addEventListener('change', e => {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      // ⚠️ 자기참조 방지용 분해 작성
       const VAR   = '__LOADED' + '_DATA_B64__';
       const RE    = new RegExp("const " + VAR + " = '([^']+)';");
       const match = ev.target.result.match(RE);
@@ -349,25 +332,20 @@ document.getElementById('import-file').addEventListener('change', e => {
 });
 
 // ── 병합 모달 상태 ──────────────────────────────────
-let _mergeQueue   = null;   // { incoming, source } 대기열
-let _mergeSource  = null;   // 'json' | 'md'
+let _mergeQueue  = null;
+let _mergeSource = null;
 
 function openMergeModal(incoming, source) {
   _mergeQueue  = incoming;
   _mergeSource = source;
 
-  // 중복 카드 미리 탐색
   const { dupById, dupByTitle } = detectDuplicates(incoming);
   const dupCount = dupById.size + dupByTitle.size;
 
-  // 설명 텍스트
   document.getElementById('merge-modal-desc').textContent =
     incoming.length + '개 카드를 가져옵니다. ' +
-    (dupCount > 0
-      ? '중복이 감지된 항목이 있습니다.'
-      : '중복 항목이 없습니다.');
+    (dupCount > 0 ? '중복이 감지된 항목이 있습니다.' : '중복 항목이 없습니다.');
 
-  // 중복 요약 뱃지
   const summary = document.getElementById('merge-dup-summary');
   const text    = document.getElementById('merge-dup-text');
   if (dupCount > 0) {
@@ -380,13 +358,11 @@ function openMergeModal(incoming, source) {
     summary.style.display = 'none';
   }
 
-  // 중복이 없으면 전략 선택 영역 숨김, 자동 추가
   const group = document.getElementById('merge-strategy-group');
   const label = document.querySelector('#merge-modal .field > label');
   if (dupCount === 0) {
     group.style.display = 'none';
     if (label) label.style.display = 'none';
-    // skip으로 세팅해도 어차피 중복 없으므로 동일
     document.querySelector('input[name="merge-strategy"][value="skip"]').checked = true;
   } else {
     group.style.display = 'flex';
@@ -402,13 +378,12 @@ function closeMergeModal() {
   _mergeSource = null;
 }
 
-// ── Task 4: 마크다운 프런트매터 파서 ──────────────────
+// ── 마크다운 프런트매터 파서 ──────────────────────────
 function parseFrontmatterLine(line) {
   const m = line.match(/^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$/);
   if (!m) return null;
   const key = m[1];
   let raw = m[2].trim();
-  // 배열 파싱
   if (raw.startsWith('[') && raw.endsWith(']')) {
     const inner = raw.slice(1, -1).trim();
     if (!inner) return { key, val: [] };
@@ -431,7 +406,7 @@ function parseFrontmatterLine(line) {
 function parseMarkdownFile(text, fallbackTitle) {
   let title = fallbackTitle || '', column = '', group = '';
   let priority = 'mid', learnStatus = 'wait', tags = [], created = today();
-  let slug = '';   // v1.5
+  let slug = '';
   let body = text;
 
   const fmRe = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
@@ -447,7 +422,7 @@ function parseMarkdownFile(text, fallbackTitle) {
         case 'priority':    if (VALID_PRIORITIES.includes(kv.val)) priority = kv.val; break;
         case 'learnStatus': if (['wait','doing','done'].includes(kv.val)) learnStatus = kv.val; break;
         case 'tags':        if (Array.isArray(kv.val)) tags = kv.val.map(String); break;
-        case 'slug':        if (typeof kv.val === 'string') slug = kv.val; break;  // v1.5
+        case 'slug':        if (typeof kv.val === 'string') slug = kv.val; break;
         case 'created':     created = String(kv.val); break;
       }
     });
@@ -458,36 +433,31 @@ function parseMarkdownFile(text, fallbackTitle) {
     body = text;
   }
 
-  // v1.5: 이미지 토큰화
   const card = {
     title: title || fallbackTitle || '제목 없음',
     column, group, priority, learnStatus, tags, created, body,
-    slug: slug || '',   // v1.5
-    images: {},         // v1.5
+    slug: slug || '',
+    images: {},
   };
-  bodyImagesToTokens(card);   // v1.5: 본문의 표준 이미지 → 토큰
+  bodyImagesToTokens(card);
   return card;
 }
 
 // ── 중복 감지 헬퍼 ────────────────────────────────────
 function detectDuplicates(incoming) {
-  // 기존 카드의 id 집합
   const existingIds = new Set((S.cards || []).map(c => c.id));
-
-  // 기존 카드의 (title, colId) 키 집합
   const colMap = {};
   (S.columns || []).forEach(col => { colMap[col.title] = col.id; });
   const existingTitleCol = new Set(
     (S.cards || []).map(c => c.title + '\x00' + (c.colId || ''))
   );
 
-  const dupById    = new Set(); // index in incoming
-  const dupByTitle = new Set(); // index in incoming
+  const dupById    = new Set();
+  const dupByTitle = new Set();
 
   incoming.forEach((card, i) => {
     if (card.id && existingIds.has(card.id)) dupById.add(i);
     else {
-      // title + column 매핑
       const colName = card.column || card.status || '';
       const colId   = colMap[colName] || '';
       const key     = (card.title || '') + '\x00' + colId;
@@ -500,7 +470,6 @@ function detectDuplicates(incoming) {
 
 // ── 실제 병합 실행 ────────────────────────────────────
 function executeMerge(incoming, strategy) {
-  // 토스트용 통계 사전 계산 (dispatch 전)
   const colMap = {};
   (S.columns || []).forEach(col => { colMap[col.title] = col.id; });
   const nameToId = { ...colMap };
@@ -517,8 +486,8 @@ function executeMerge(incoming, strategy) {
     const titleKey = (card.title || '') + '\x00' + (colId === '__new__' ? colName : (colId || ''));
     const titleDup = !idDup && existingTitleCol.has(titleKey);
     const isDup    = idDup || titleDup;
-    if (!isDup)                   { added++; existingIds.add(card.id || 'x'); existingTitleCol.add(titleKey); }
-    else if (strategy === 'skip') { skipped++; }
+    if (!isDup)                        { added++; existingIds.add(card.id || 'x'); existingTitleCol.add(titleKey); }
+    else if (strategy === 'skip')      { skipped++; }
     else if (strategy === 'overwrite') { overwritten++; }
     else if (strategy === 'keepboth')  { added++; }
   });
@@ -566,7 +535,7 @@ document.getElementById('import-json-file').addEventListener('change', e => {
   reader.readAsText(file); e.target.value = '';
 });
 
-// ── Task 4: 마크다운 파일 가져오기 (.md, 다중) ──────────
+// ── 마크다운 파일 가져오기 (.md, 다중) ──────────
 document.getElementById('import-md-btn').addEventListener('click', () => {
   closeAllDropdowns();
   document.getElementById('import-md-file').click();
@@ -591,38 +560,3 @@ document.getElementById('import-md-file').addEventListener('change', async e => 
   if (errCnt > 0) toast(errCnt + '개 파일을 읽지 못했습니다', 'warning');
   openMergeModal(cards, 'markdown');
 });
-// ══════════════════════════════════════════════════════
-let toastTm;
-
-// lucide 아이콘 (variant별)
-const TOAST_ICONS = {
-  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
-  error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>',
-  warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
-  info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
-};
-
-// 메시지 휴리스틱: 명시 variant 없을 때 자동 추정
-function inferToastVariant(msg) {
-  const m = String(msg);
-  if (/실패|오류|불가|읽을 수 없|에러/.test(m)) return 'error';
-  if (/입력해주세요|확인해주세요|필요|주의/.test(m)) return 'warning';
-  if (/환영|시작/.test(m)) return 'info';
-  return 'success';
-}
-
-function toast(msg, variant) {
-  const t = document.getElementById('toast');
-  const v = variant || inferToastVariant(msg);
-  // variant 클래스 정리 + 새 클래스 적용
-  t.classList.remove('toast-success','toast-error','toast-warning','toast-info');
-  t.classList.add('toast-' + v);
-  // 아이콘 + 메시지 구조
-  t.innerHTML =
-    '<span class="toast-ico">' + (TOAST_ICONS[v] || TOAST_ICONS.success) + '</span>' +
-    '<span class="toast-msg"></span>';
-  t.querySelector('.toast-msg').textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTm);
-  toastTm = setTimeout(() => t.classList.remove('show'), 2400);
-}

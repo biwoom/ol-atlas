@@ -1,11 +1,13 @@
 // src/core/render-queue.js
 // ── rAF 기반 렌더 큐 ─────────────────────────────────────
-// 한 tick 안의 다중 queueRender는 1회로 합쳐짐.
+
+import { devLog, devGroup } from './dev.js';
+import { listViews, getSubscriber } from './store.js';
 
 const _renderQueue = new Set();
 let _renderScheduled = false;
 
-function queueRender(viewName) {
+export function queueRender(viewName) {
   _renderQueue.add(viewName);
   devLog('QUEUE', viewName, '(queue size: ' + _renderQueue.size + ')');
   if (!_renderScheduled) {
@@ -39,8 +41,7 @@ function _renderFlush() {
   });
 }
 
-// 즉시 flush (부팅 첫 렌더 / 테스트용)
-function flushNow() {
+export function flushNow() {
   _renderScheduled = false;
   _renderFlush();
 }

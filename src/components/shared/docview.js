@@ -1,50 +1,150 @@
-// src/components/docview-inline.js
-// ── 문서뷰 인라인 편집 (Phase 5) ─────────────────────
+// src/components/docview.js
+// ── Document View + 인라인 편집 (merged) ─────────────
 
-// 문서뷰에서 다른 카드로 이동
-async function goToDocCard(cardId) {
-  // Phase 5: 인라인 편집 중이고 변경이 있으면 confirm
-  if (dvEditing && isDvEditDirty()) {
-    const ok = await customConfirm({
-      title: '카드 이동',
-      message: '저장되지 않은 변경사항이 있습니다.\n다른 카드로 이동하시겠습니까?',
-      confirmText: '이동',
-      cancelText: '취소',
-    });
-    if (!ok) return;
+import { S }                        from '../../core/state.js';
+import { dispatch }                 from '../../core/action.js';
+import { updateCard }               from '../../actions/card-actions.js';
+import { ce, escapeHTML, toast, dlBlob } from '../../core/utils.js';
+import { parseMarkdown }            from '../../core/markdown.js';
+import { titleToSlug, slugFilename } from '../../core/constants.js';
+import { buildEmptyState }          from '../../core/normalize.js';
+import { customConfirm }            from '../../ui/confirm-modal.js';
+import { initCustomSelect }         from '../../ui/custom-select.js';
+import { currentView, currentDocCardId, setCurrentDocCardId, getOrderedCardList, getPrevNextCard, updateHash, switchView, registerDocViewGuard } from '../../core/router.js';
+import { _currentEditingCard, setCurrentEditingCard } from '../../core/tag-filter.js';
+import { queueRender }              from '../../core/render-queue.js';
+import { subscribe }                from '../../core/store.js';
+import { attachMarkdownEditor, renderDvImgPanel } from '../author/md-editor.js';
+import { openCardModal, setEditCard, openCardDeleteDialog } from '../author/card-modal.js';
+import { cardToMarkdownText }       from '../../actions/export-import.js';
+
+// ── TOC ──────────────────────────────────────────────
+
+function extractToc(md) {
+  if (!md) return [];
+  const items = [];
+  const usedIds = new Set();
+  let inFence = false;
+
+  function makeId(rawText) {
+    const plain = rawText.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, '');
+    const base = 'h-' + (plain.toLowerCase()
+      .replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ]/g, '')
+      .trim().replace(/\s+/g, '-') || 'heading');
+    let id = base;
+    let n = 2;
+    while (usedIds.has(id)) id = `${base}-${n++}`;
+    usedIds.add(id);
+    return id;
   }
-  // 편집 모드 강제 종료 (저장 안 됨)
-  dvEditing = false;
-  dvEditOriginal = '';
 
-  currentDocCardId = cardId;
-  queueRender('docview');
-  queueRender('sidebar');  // 문서뷰 트리 active 카드 갱신
-  // 페이지 상단으로 스크롤
-  const main = document.getElementById('main');
-  if (main) main.scrollTop = 0;
-  // v1.5: hash 갱신
-  updateHash('document');
+  md.split('\n').forEach(line => {
+    if (/^```/.test(line)) { inFence = !inFence; return; }
+    if (inFence) return;
+    const hm = line.match(/^(#{1,3})\s+(.+)/);
+    if (!hm) return;
+    const lvl  = hm[1].length;
+    const text = hm[2].trim();
+    const id   = makeId(text);
+    items.push({ lvl, text, id });
+  });
+  return items;
 }
 
-// 외부 진입점: 어떤 카드든 문서뷰로 열기
-function openDocCard(cardId) {
-  // Phase 5: 다른 곳에서 진입할 때도 편집 상태 초기화
-  dvEditing = false;
-  dvEditOriginal = '';
+function renderDocToc(tocItems) {
+  const toc = document.getElementById('dv-toc');
+  if (!toc) return;
 
-  currentDocCardId = cardId;
-  switchView('document');
+  if (!tocItems || tocItems.length < 2) {
+    toc.style.display = 'none';
+    toc.innerHTML = '';
+    return;
+  }
+
+  toc.style.display = '';
+  toc.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'dv-toc-label';
+  label.textContent = '목차';
+  toc.appendChild(label);
+
+  const list = document.createElement('nav');
+  list.className = 'dv-toc-list';
+
+  tocItems.forEach(({ lvl, text, id }) => {
+    const a = document.createElement('a');
+    a.className = `dv-toc-item dv-toc-h${lvl}`;
+    a.textContent = text;
+    a.href = '#';
+    a.dataset.headingId = id;
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        toc.querySelectorAll('.dv-toc-item').forEach(el => el.classList.remove('active'));
+        a.classList.add('active');
+      }
+    });
+    list.appendChild(a);
+  });
+
+  toc.appendChild(list);
 }
 
-// ══════════════════════════════════════════════════════
-//  문서뷰 인라인 편집 (마크다운 단일 모드 + 메타 편집)
-// ══════════════════════════════════════════════════════
+let _tocObserver = null;
 
-let dvEditing      = false;  // 현재 인라인 편집 중인가
-let dvEditOriginal = '';     // 본문 편집 시작 시점 원본 (dirty 체크용)
-let dvEditPri      = 'mid';  // 편집 중 우선순위
-let dvEditStatus   = 'wait'; // 편집 중 학습상태
+function setupTocObserver() {
+  if (_tocObserver) { _tocObserver.disconnect(); _tocObserver = null; }
+
+  const toc = document.getElementById('dv-toc');
+  if (!toc || toc.style.display === 'none') return;
+
+  const body = document.getElementById('dv-body');
+  if (!body) return;
+  const headings = Array.from(body.querySelectorAll('.md-h1[id],.md-h2[id],.md-h3[id]'));
+  if (!headings.length) return;
+
+  const scrollRoot = document.getElementById('main');
+
+  _tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const link = toc.querySelector(`[data-heading-id="${e.target.id}"]`);
+      if (!link) return;
+      if (e.isIntersecting) {
+        toc.querySelectorAll('.dv-toc-item').forEach(el => el.classList.remove('active'));
+        link.classList.add('active');
+        link.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }, {
+    root: scrollRoot,
+    rootMargin: '-120px 0px -55% 0px',
+    threshold: 0
+  });
+
+  headings.forEach(h => _tocObserver.observe(h));
+
+  if (headings.length) {
+    const firstLink = toc.querySelector(`[data-heading-id="${headings[0].id}"]`);
+    if (firstLink) firstLink.classList.add('active');
+  }
+}
+
+function renderDocBody(card) {
+  if (!card) return '';
+  const src = (card.body || '').trim();
+  if (!src) return '<div class="dv-body-empty">(본문이 비어 있습니다)</div>';
+  return '<div class="md-body">' + parseMarkdown(src, { card }) + '</div>';
+}
+
+// ── 인라인 편집 상태 ─────────────────────────────────
+
+let dvEditing      = false;
+let dvEditOriginal = '';
+let dvEditPri      = 'mid';
+let dvEditStatus   = 'wait';
 
 function getDvEditValue() {
   if (!dvEditing) return '';
@@ -52,8 +152,9 @@ function getDvEditValue() {
   return ta ? ta.value : '';
 }
 
-// dirty 체크 — 본문 OR 메타 중 하나라도 변경됐으면 true
-function isDvEditDirty() {
+export function isDvEditing() { return dvEditing; }
+
+export function isDvEditDirty() {
   if (!dvEditing) return false;
   if (getDvEditValue() !== dvEditOriginal) return true;
   const card = S.cards.find(c => c.id === currentDocCardId);
@@ -71,7 +172,6 @@ function isDvEditDirty() {
   return false;
 }
 
-// 메타 편집 패널 HTML 생성
 function buildDvMetaEditHTML(card) {
   const colOptions = S.columns.map(col =>
     `<option value="${col.id}" ${col.id === card.colId ? 'selected' : ''}>${escapeHTML(col.title)}</option>`
@@ -122,7 +222,6 @@ function buildDvMetaEditHTML(card) {
     </div>`;
 }
 
-// 우선순위·학습상태 버튼 이벤트 연결
 function attachDvMetaBtnHandlers() {
   document.querySelectorAll('#dv-me-pri-row [data-dv-pri]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -142,7 +241,6 @@ function attachDvMetaBtnHandlers() {
   });
 }
 
-// 에디터 영역(dv-body 또는 기존 dv-edit-area) → 마크다운 에디터로 교체
 function applyDvEditArea(initialValue) {
   const existing = document.getElementById('dv-body') || document.querySelector('.dv-edit-area');
   if (!existing) return;
@@ -182,7 +280,6 @@ function applyDvEditArea(initialValue) {
         </div>
         <div class="md-slash-menu" role="listbox" aria-label="블록 메뉴"></div>
       </div>
-      <!-- v1.5: 이미지 패널 — md-editor 하단 -->
       <div class="dv-img-panel" id="dv-img-panel-row" style="display:none">
         <div class="dv-img-panel-header">
           <span class="dv-img-panel-label">이미지 목록</span>
@@ -196,8 +293,6 @@ function applyDvEditArea(initialValue) {
   if (ta) {
     ta.value = initialValue;
     attachMarkdownEditor(ta);
-    // preventScroll: true — 포커스 시 브라우저 자동 스크롤 방지
-    // (스크롤 복원은 startInlineEdit의 requestAnimationFrame에서 담당)
     requestAnimationFrame(() => {
       ta.focus({ preventScroll: true });
       try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e) {}
@@ -205,20 +300,16 @@ function applyDvEditArea(initialValue) {
   }
 }
 
-// 편집 모드 진입 — 메타 패널 + 제목 input + 본문 에디터 모두 구성
-function startInlineEdit() {
+export function startInlineEdit() {
   if (currentDocCardId == null) return;
   const card = S.cards.find(c => c.id === currentDocCardId);
   if (!card) return;
 
-  // v1.5: 미리보기 렌더링 컨텍스트
-  _currentEditingCard = card;
+  setCurrentEditingCard(card);
 
-  // 편집 진입 직전 스크롤 위치 기억 (편집 후 복원용)
   const mainEl = document.getElementById('main');
   const savedScroll = mainEl ? mainEl.scrollTop : 0;
 
-  // 편집 모드 진입 시 TOC 숨김 + Observer 정리
   const tocEl = document.getElementById('dv-toc');
   if (tocEl) tocEl.style.display = 'none';
   if (_tocObserver) { _tocObserver.disconnect(); _tocObserver = null; }
@@ -232,49 +323,33 @@ function startInlineEdit() {
   const wrap = document.getElementById('dv-wrap');
   if (!wrap) return;
 
-  // 1) dv-meta → 메타 편집 패널로 교체
   const metaEl = wrap.querySelector('.dv-meta');
   if (metaEl) metaEl.outerHTML = buildDvMetaEditHTML(card);
 
-  // 2) dv-title → 제목 input으로 교체
   const titleEl = wrap.querySelector('.dv-title');
   if (titleEl) {
     titleEl.outerHTML = `<input class="dv-me-title-input" id="dv-me-title"
       type="text" placeholder="제목을 입력하세요" value="${escapeHTML(card.title || '')}">`;
   }
 
-  // 3) dv-body → 마크다운 에디터로 교체
   applyDvEditArea(initial);
-
-  // 4) 메타 버튼 이벤트 연결
   attachDvMetaBtnHandlers();
 
-  // 4-0) 커스텀 드롭다운 초기화 (dv-me-col)
-  // 인라인 편집 진입마다 새 DOM이 만들어지므로 매번 호출
   requestAnimationFrame(() => {
     const dvCol = document.getElementById('dv-me-col');
-    if (dvCol && !dvCol._csInit && typeof initCustomSelect === 'function') {
-      initCustomSelect(dvCol);
-    }
+    if (dvCol && !dvCol._csInit) initCustomSelect(dvCol);
   });
 
-  // 4-1) v1.5: 문서뷰 이미지 패널 렌더
   renderDvImgPanel();
-
-  // 5) 헤더 액션바를 저장/취소로 교체
   swapDvBarToEditMode();
 
-  // 6) DOM 교체 후 스크롤 복원 → 그 다음 포커스 (포커스가 스크롤을 다시 움직이지 않도록)
   requestAnimationFrame(() => {
-    // 스크롤 먼저 복원
     if (mainEl) mainEl.scrollTop = savedScroll;
-    // 포커스: scrollIntoView를 막기 위해 preventScroll 옵션 사용
     const ti = document.getElementById('dv-me-title');
     if (ti) ti.focus({ preventScroll: true });
   });
 }
 
-// 헤더 액션바 → 편집 모드 (저장 / 취소)
 function swapDvBarToEditMode() {
   const bar = document.querySelector('#view-document .view-bar');
   if (!bar) return;
@@ -298,9 +373,9 @@ function swapDvBarToEditMode() {
     document.getElementById('dv-edit-save').addEventListener('click', saveInlineEdit);
     document.getElementById('dv-edit-delete').addEventListener('click', () => {
       if (!currentDocCardId) return;
-      // editCard 임시 세팅 후 deleteCard 호출
-      editCard = S.cards.find(c => c.id === currentDocCardId) || null;
-      if (editCard) deleteCard();
+      const card = S.cards.find(c => c.id === currentDocCardId) || null;
+      setEditCard(card);
+      if (card) openCardDeleteDialog();
     });
     document.getElementById('dv-edit-export-md').addEventListener('click', () => {
       const card = _currentEditingCard || S.cards.find(c => c.id === currentDocCardId);
@@ -315,7 +390,6 @@ function swapDvBarToEditMode() {
   }
 }
 
-// 헤더 액션바 → 읽기 모드
 function swapDvBarToReadMode() {
   const editBtn = document.getElementById('dv-edit-btn');
   if (editBtn) editBtn.style.display = '';
@@ -323,8 +397,7 @@ function swapDvBarToReadMode() {
   if (actions) actions.style.display = 'none';
 }
 
-// 저장 — 본문 + 메타 필드 일괄 반영
-function saveInlineEdit() {
+export function saveInlineEdit() {
   if (!dvEditing) return;
   const card = S.cards.find(c => c.id === currentDocCardId);
   if (!card) { cancelInlineEdit(); return; }
@@ -342,7 +415,6 @@ function saveInlineEdit() {
   const colRaw   = colEl   ? parseInt(colEl.value, 10) : card.colId;
   const newColId = Number.isFinite(colRaw) ? colRaw : card.colId;
 
-  // v1.5: slug
   let newSlug = slugEl ? slugEl.value.trim() : (card.slug || '');
   if (!newSlug) newSlug = titleToSlug(newTitle);
   if (!newSlug) newSlug = 'card-' + card.id;
@@ -362,7 +434,7 @@ function saveInlineEdit() {
 
   dvEditing = false;
   dvEditOriginal = '';
-  _currentEditingCard = null;
+  setCurrentEditingCard(null);
 
   updateHash('document');
   const mainEl = document.getElementById('main');
@@ -370,8 +442,7 @@ function saveInlineEdit() {
   toast('저장되었습니다');
 }
 
-// 취소
-async function cancelInlineEdit() {
+export async function cancelInlineEdit() {
   if (!dvEditing) return;
   if (isDvEditDirty()) {
     const ok = await customConfirm({
@@ -384,9 +455,144 @@ async function cancelInlineEdit() {
   }
   dvEditing = false;
   dvEditOriginal = '';
-  _currentEditingCard = null;   // v1.5
+  setCurrentEditingCard(null);
   queueRender('docview');
-  // 취소 후 문서 상단으로 복원
   const mainEl = document.getElementById('main');
   if (mainEl) mainEl.scrollTop = 0;
 }
+
+// ── 네비게이션 ───────────────────────────────────────
+
+export async function goToDocCard(cardId) {
+  if (dvEditing && isDvEditDirty()) {
+    const ok = await customConfirm({
+      title: '카드 이동',
+      message: '저장되지 않은 변경사항이 있습니다.\n다른 카드로 이동하시겠습니까?',
+      confirmText: '이동',
+      cancelText: '취소',
+    });
+    if (!ok) return;
+  }
+  dvEditing = false;
+  dvEditOriginal = '';
+
+  setCurrentDocCardId(cardId);
+  queueRender('docview');
+  queueRender('sidebar');
+  const main = document.getElementById('main');
+  if (main) main.scrollTop = 0;
+  updateHash('document');
+}
+
+export function openDocCard(cardId) {
+  dvEditing = false;
+  dvEditOriginal = '';
+
+  setCurrentDocCardId(cardId);
+  switchView('document');
+}
+
+// ── 문서뷰 렌더링 ────────────────────────────────────
+
+function renderDocumentView() {
+  if (dvEditing) {
+    dvEditing = false;
+    dvEditOriginal = '';
+  }
+  swapDvBarToReadMode();
+
+  const wrap = document.getElementById('dv-wrap');
+  const editBtn = document.getElementById('dv-edit-btn');
+  const barTitle = document.getElementById('dv-bar-title');
+  const barPos = document.getElementById('dv-bar-pos');
+  if (!wrap) return;
+
+  wrap.innerHTML = '';
+
+  if (!S.cards.length) {
+    barTitle.textContent = '문서뷰';
+    barPos.textContent = '';
+    if (editBtn) editBtn.style.display = 'none';
+    const emptyEl = buildEmptyState('doc', '문서가 없습니다',
+      '카드를 추가하면 이곳에서 문서처럼 읽고 편집할 수 있습니다.');
+    const addBtn = ce('button', 'btn pri sm');
+    addBtn.textContent = '+ 첫 카드 추가';
+    addBtn.style.marginTop = '1rem';
+    addBtn.addEventListener('click', () => openCardModal(null, null));
+    emptyEl.appendChild(addBtn);
+    wrap.appendChild(emptyEl);
+    setCurrentDocCardId(null);
+    return;
+  }
+
+  let card = currentDocCardId != null ? S.cards.find(c => c.id === currentDocCardId) : null;
+  if (!card) {
+    const list = getOrderedCardList();
+    card = list[0] || null;
+    if (card) setCurrentDocCardId(card.id);
+  }
+  if (!card) {
+    barTitle.textContent = '문서뷰';
+    barPos.textContent = '';
+    if (editBtn) editBtn.style.display = 'none';
+    wrap.appendChild(buildEmptyState('doc', '카드를 찾을 수 없습니다', '다른 카드를 선택해주세요.'));
+    return;
+  }
+
+  if (editBtn) editBtn.style.display = '';
+
+  const { prev, next, idx, total } = getPrevNextCard(card.id);
+  const col = S.columns.find(c => c.id === card.colId);
+  const learnStatus = S.userData.status[card.id] || 'wait';
+  const priLabel    = { high:'높음', mid:'보통', low:'낮음' }[card.priority] || '보통';
+  const stLabel     = { wait:'학습대기', doing:'학습중', done:'학습완료' }[learnStatus] || '학습대기';
+
+  barTitle.textContent = '문서뷰';
+  barPos.textContent = `${idx + 1} / ${total}`;
+
+  const metaParts = [];
+  if (col) {
+    metaParts.push(
+      `<span class="dv-meta-col"><span class="dv-meta-col-dot" style="background:${col.color || '#888'}"></span>${escapeHTML(col.title || '')}</span>`
+    );
+  }
+  if (card.group) {
+    metaParts.push(`<span class="dv-meta-group">${escapeHTML(card.group)}</span>`);
+  }
+  metaParts.push(`<span class="dv-meta-prio ${card.priority || 'mid'}">${priLabel}</span>`);
+  metaParts.push(`<span class="dv-meta-status ${learnStatus}">${stLabel}</span>`);
+  if (card.tags && card.tags.length) {
+    const tagsHtml = card.tags.map(t => `<span class="dv-meta-tag">${escapeHTML(t)}</span>`).join('');
+    metaParts.push(`<span class="dv-meta-tags">${tagsHtml}</span>`);
+  }
+
+  const bodyHtml = renderDocBody(card);
+
+  const prevHtml = `
+    <button class="dv-nav-btn prev" id="dv-prev" title="이전 카드 ([)" ${prev ? '' : 'disabled'}>
+      <span class="dv-nav-label">← 이전</span>
+      <span class="dv-nav-title">${prev ? escapeHTML(prev.title || '(제목 없음)') : '—'}</span>
+    </button>`;
+  const nextHtml = `
+    <button class="dv-nav-btn next" id="dv-next" title="다음 카드 (])" ${next ? '' : 'disabled'}>
+      <span class="dv-nav-label">다음 →</span>
+      <span class="dv-nav-title">${next ? escapeHTML(next.title || '(제목 없음)') : '—'}</span>
+    </button>`;
+
+  wrap.innerHTML = `
+    <div class="dv-meta">${metaParts.join('')}</div>
+    <h1 class="dv-title">${escapeHTML(card.title || '(제목 없음)')}</h1>
+    <div class="dv-body" id="dv-body">${bodyHtml}</div>
+    <div class="dv-foot">${prevHtml}${nextHtml}</div>
+  `;
+
+  if (prev) document.getElementById('dv-prev').addEventListener('click', () => goToDocCard(prev.id));
+  if (next) document.getElementById('dv-next').addEventListener('click', () => goToDocCard(next.id));
+
+  const tocItems = extractToc(card.body || '');
+  renderDocToc(tocItems);
+  requestAnimationFrame(() => setupTocObserver());
+}
+
+registerDocViewGuard(() => dvEditing && isDvEditDirty());
+subscribe('docview', renderDocumentView);

@@ -1,9 +1,17 @@
 // src/data/init.js
 // ── 앱 부팅 시퀀스 ──────────────────────────────────────
-// 순서: localStorage 로드 → migrate → normalize → store init
-//       → beforeunload 가드 → 첫 렌더 → 뷰 복원
 
-(function boot() {
+import { devLog }                   from '../core/dev.js';
+import { storageLoad, STORAGE_KEY } from '../core/storage.js';
+import { makeDefault, bootState }   from '../core/state.js';
+import { migrate }                  from '../core/schema.js';
+import { normalizeState }           from '../core/normalize.js';
+import { listViews }                from '../core/store.js';
+import { installBeforeUnloadGuard } from '../core/dirty.js';
+import { queueRender, flushNow }    from '../core/render-queue.js';
+import { routeFromHash, switchView } from '../core/router.js';
+
+export function boot() {
   devLog('BOOT', 'boot start');
 
   // 1. state 로드 + 마이그레이션 + 정규화
@@ -42,7 +50,6 @@
   window.addEventListener('hashchange', routeFromHash);
 
   if (location.hash && location.hash.length > 1) {
-    // 첫 렌더는 routeFromHash → switchView 내부에서 queueRender
     queueRender('__all__');
     flushNow();
     routeFromHash();
@@ -65,4 +72,4 @@
 
   switchView(startView);
   devLog('BOOT', 'boot complete');
-})();
+}

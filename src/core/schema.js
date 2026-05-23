@@ -1,11 +1,11 @@
 // src/core/schema.js
 // ── schemaVersion 마이그레이션 ───────────────────────────
-// v6 → v7: meta.dirty, meta.lastSavedAt, settings 추가.
+
+import { devLog, devAssert } from './dev.js';
 
 const SCHEMA_CURRENT_VERSION = 7;
 
 const _schemaMigrators = {
-  // v6 → v7
   6: function(s) {
     devLog('MIGRATE', 'v6 → v7');
     if (!s.meta) s.meta = {};
@@ -25,7 +25,7 @@ const _schemaMigrators = {
   },
 };
 
-function migrate(state) {
+export function migrate(state) {
   if (!state) return state;
   if (!state.meta) state.meta = { schemaVersion: 6 };
 
@@ -37,7 +37,6 @@ function migrate(state) {
     return state;
   }
 
-  // v6 백업 (안전망)
   if (v === 6) {
     try {
       localStorage.setItem('ol_backup_v6', JSON.stringify(state));
@@ -58,6 +57,6 @@ function migrate(state) {
   return state;
 }
 
-function getSchemaVersion() {
+export function getSchemaVersion() {
   return SCHEMA_CURRENT_VERSION;
 }

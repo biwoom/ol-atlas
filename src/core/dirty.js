@@ -1,10 +1,15 @@
 // src/core/dirty.js
 // ── Dirty State + autosave + beforeunload 경고 ──────────
 
+import { devLog } from './dev.js';
+import { getState } from './store.js';
+import { storageSave } from './storage.js';
+import { queueRender } from './render-queue.js';
+
 let _autosaveTimer = null;
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 
-function markDirty() {
+export function markDirty() {
   const s = getState();
   if (!s) return;
   if (!s.meta) s.meta = {};
@@ -16,7 +21,7 @@ function markDirty() {
   queueRender('dirty-indicator');
 }
 
-function markClean() {
+export function markClean() {
   const s = getState();
   if (!s) return;
   if (!s.meta) s.meta = {};
@@ -35,12 +40,12 @@ function _scheduleAutosave() {
   }, AUTOSAVE_DEBOUNCE_MS);
 }
 
-function isDirty() {
+export function isDirty() {
   const s = getState();
   return !!(s && s.meta && s.meta.dirty);
 }
 
-function installBeforeUnloadGuard() {
+export function installBeforeUnloadGuard() {
   window.addEventListener('beforeunload', function(e) {
     if (isDirty()) {
       const msg = '저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?';

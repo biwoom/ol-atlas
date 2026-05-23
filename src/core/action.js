@@ -1,19 +1,20 @@
 // src/core/action.js
 // ── 모든 state 변경의 단일 진입점 ───────────────────────
-// dispatch(action) → reducer 실행 → markDirty → queueRender
+
+import { devLog, devAssert, devTime } from './dev.js';
+import { getState, applyState } from './store.js';
+import { markDirty } from './dirty.js';
+import { queueRender } from './render-queue.js';
 
 const _reducers = [];
 
-// reducer 등록 (Phase 2에서 각 도메인 reducer가 등록됨)
-function registerReducer(reducerFn) {
+export function registerReducer(reducerFn) {
   devAssert(typeof reducerFn === 'function', 'registerReducer: must be function');
   _reducers.push(reducerFn);
   devLog('BOOT', 'reducer registered (total: ' + _reducers.length + ')');
 }
 
-// action에 영향받는 view 목록은 action.meta.affects로 명시.
-// 미명시 시 '__all__' (전체 flush).
-function dispatch(action) {
+export function dispatch(action) {
   devAssert(action && typeof action === 'object', 'dispatch: action must be object');
   devAssert(typeof action.type === 'string', 'dispatch: action.type required');
 
@@ -29,7 +30,6 @@ function dispatch(action) {
 
   markDirty();
 
-  // 영향받는 view 자동 queue
   const affects = (action.meta && action.meta.affects) || ['all'];
   if (affects.includes('all')) {
     queueRender('__all__');

@@ -1,9 +1,22 @@
 // src/components/kanban.js
 // ── 칸반 보드 + Drag & Drop + 컬럼 관리 ──────────────
 
+import { S }                        from '../../core/state.js';
+import { dispatch }                 from '../../core/action.js';
+import { createColumn, renameColumn, deleteColumn } from '../../actions/column-actions.js';
+import { moveCard }                               from '../../actions/card-actions.js';
+import { ce, toast }                from '../../core/utils.js';
+import { cardPreviewText }          from '../../core/body-helpers.js';
+import { COL_COLORS }               from '../../core/constants.js';
+import { customConfirm }            from '../../ui/confirm-modal.js';
+import { subscribe }                from '../../core/store.js';
+import { openCardModal }            from './card-modal.js';
+import { openDocCard }              from '../shared/docview.js';
+import { showCPicker }              from './color-picker.js';
+
 let dragCardId = null;
 
-function renderKanban() {
+export function renderKanban() {
   const board = document.getElementById('kb-board');
   board.innerHTML = '';
   S.columns.forEach(col => board.appendChild(buildCol(col)));
@@ -87,7 +100,6 @@ function updateColCounts() {
   });
 }
 
-// ── Drag & Drop ─────────────────────────────────────────
 function onDragStart(e) {
   dragCardId = parseInt(this.dataset.cardId);
   setTimeout(() => this.classList.add('dragging'), 0);
@@ -147,12 +159,12 @@ function dragAfterEl(container, y) {
   }, { offset: -Infinity }).element || null;
 }
 
-// ── Column management ───────────────────────────────────
-function addColumn() {
+export function addColumn() {
   const color = COL_COLORS[Math.floor(Math.random()*COL_COLORS.length)];
   dispatch(createColumn({ title: '새 컬럼', color }));
   toast('컬럼이 추가되었습니다');
 }
+
 async function _kbDeleteColumn(colId) {
   const cnt = S.cards.filter(c => c.colId === colId).length;
   const message = cnt
@@ -171,5 +183,4 @@ async function _kbDeleteColumn(colId) {
   toast('컬럼이 삭제되었습니다');
 }
 
-// Phase 1: store에 등록
 subscribe('kanban', renderKanban);

@@ -1,5 +1,5 @@
-// src/components/shared/confirm-modal.js
-// Promise 기반 div 커스텀 모달. concat 방식이므로 전역 함수로 정의.
+// src/ui/confirm-modal.js
+// Promise 기반 div 커스텀 모달.
 
 let _modalStack = [];
 let _modalPrevFocus = null;
@@ -14,7 +14,7 @@ let _modalPrevFocus = null;
  * @param {boolean} [opts.defaultCancel]  기본 true. true이면 취소 버튼에 포커스
  * @returns {Promise<boolean>}
  */
-function customConfirm(opts) {
+export function customConfirm(opts) {
   opts = opts || {};
   return new Promise(function(resolve) {
     _showModal({
@@ -38,7 +38,7 @@ function customConfirm(opts) {
  * @param {boolean} [opts.danger]
  * @returns {Promise<void>}
  */
-function customAlert(opts) {
+export function customAlert(opts) {
   opts = opts || {};
   return new Promise(function(resolve) {
     _showModal({

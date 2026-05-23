@@ -1,13 +1,15 @@
 // src/data/search/search.js
 // ── 검색 ────────────────────────────────────────────
 
-// ══════════════════════════════════════════════════════
-//  SEARCH
-// ══════════════════════════════════════════════════════
-let searchActive = false;
+import { S }                       from '../../core/state.js';
+import { escapeHTML }              from '../../core/utils.js';
+import { cardPreviewText, cardSearchText } from '../../core/body-helpers.js';
+import { openCardModal }           from '../../components/author/card-modal.js';
+
+export let searchActive = false;
 let searchResults = [];
 
-function highlightText(text, query) {
+export function highlightText(text, query) {
   if (!query || !text) return escapeHTML(text || '');
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return escapeHTML(text).replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
@@ -20,9 +22,7 @@ function runSearch(q) {
     if (c.title && c.title.toLowerCase().includes(lower)) return true;
     if (c.group && c.group.toLowerCase().includes(lower)) return true;
     if (c.tags  && c.tags.some(t => t.toLowerCase().includes(lower))) return true;
-    // 본문은 plain/markdown 양쪽 모두 검사
-    const haystack = cardSearchText(c).toLowerCase();
-    return haystack.includes(lower);
+    return cardSearchText(c).toLowerCase().includes(lower);
   });
   renderSearchDropdown(q);
 }
@@ -79,7 +79,6 @@ function renderSearchDropdown(q) {
     });
   }
 
-  // 드롭다운 위치: 검색 입력폼 기준
   const inputRect = document.getElementById('h-search-input').getBoundingClientRect();
   dd.style.left  = inputRect.left + 'px';
   dd.style.width = Math.max(420, inputRect.width) + 'px';
@@ -87,22 +86,19 @@ function renderSearchDropdown(q) {
   searchActive = true;
 }
 
-function closeSearch() {
+export function closeSearch() {
   document.getElementById('search-dropdown').classList.remove('open');
   searchActive = false;
 }
 
-// 검색 입력 이벤트
-const searchInput = document.getElementById('h-search-input');
-const searchClear = document.getElementById('h-search-clear');
-const searchKbd   = document.getElementById('h-search-kbd');
+export const searchInput = document.getElementById('h-search-input');
+export const searchClear = document.getElementById('h-search-clear');
+const searchKbd          = document.getElementById('h-search-kbd');
 
-// macOS 가 아니면 modifier 표시를 Ctrl 로 변경
 (function() {
   const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   if (isMac) return;
   if (searchKbd) searchKbd.textContent = 'Ctrl K';
-  // 카드 모달 저장 버튼의 ⌘↵ → Ctrl ↵
   document.querySelectorAll('.kbd-hint').forEach(el => {
     el.textContent = el.textContent.replace('⌘', 'Ctrl ');
   });
@@ -122,11 +118,7 @@ searchInput.addEventListener('focus', function() {
 });
 
 searchInput.addEventListener('keydown', function(e) {
-  // 한글 IME 합성 중 keydown 무시 (브라우저가 합성 종료 처리)
   if (e.isComposing || e.keyCode === 229) return;
-
-  // Enter 는 form-submit / 기타 우발 default action 차단
-  // (검색 결과 키보드 네비게이션은 의도적으로 제공하지 않음 — 마우스 클릭 사용)
   if (e.key === 'Enter') {
     e.preventDefault();
     e.stopPropagation();
@@ -140,7 +132,6 @@ searchClear.addEventListener('click', () => {
   searchInput.focus();
 });
 
-// 외부 클릭 시 검색 드롭다운 닫기
 document.addEventListener('click', e => {
   const dd = document.getElementById('search-dropdown');
   const wrap = document.querySelector('.h-search-wrap');

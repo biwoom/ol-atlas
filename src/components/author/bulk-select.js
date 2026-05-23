@@ -1,19 +1,30 @@
 // src/components/bulk-select.js
 // ── 다중 선택 + 일괄 작업 (BULK SELECT) ───────────────
 
-let cgSelected = new Set(); // 카드 뷰 선택된 카드 ID
-let lvSelected = new Set(); // 리스트 뷰 선택된 카드 ID
+import { S }                        from '../../core/state.js';
+import { dispatch }                 from '../../core/action.js';
+import { bulkDeleteCards, bulkSetGroup, bulkSetColumn, setBulkStatus } from '../../actions/card-actions.js';
+import { customConfirm }            from '../../ui/confirm-modal.js';
+import { toast }                    from '../../core/utils.js';
+import { currentView, currentDocCardId, setCurrentDocCardId, registerViewChangeCb } from '../../core/router.js';
+import { queueRender }              from '../../core/render-queue.js';
+import { exportCardsAsIndividualMd } from '../../actions/export-import.js';
 
-function clearBulkSelection(view) {
+export let cgSelected = new Set();
+export let lvSelected = new Set();
+
+registerViewChangeCb(() => { cgSelected.clear(); lvSelected.clear(); });
+
+export function clearBulkSelection(view) {
   if (view === 'cg' || !view) cgSelected.clear();
   if (view === 'lv' || !view) lvSelected.clear();
 }
 
-function getBulkSet(view) {
+export function getBulkSet(view) {
   return view === 'cg' ? cgSelected : lvSelected;
 }
 
-function updateBulkBar(view) {
+export function updateBulkBar(view) {
   const sel  = getBulkSet(view);
   const bar  = document.getElementById(view + '-bulk-bar');
   const cnt  = document.getElementById(view + '-bulk-count');
@@ -22,7 +33,7 @@ function updateBulkBar(view) {
   bar.classList.toggle('show', sel.size > 0);
 }
 
-function toggleSelectAll(view, cardList) {
+export function toggleSelectAll(view, cardList) {
   const sel = getBulkSet(view);
   const allIds = cardList.map(c => c.id);
   const allSelected = allIds.every(id => sel.has(id));
@@ -36,8 +47,6 @@ function toggleSelectAll(view, cardList) {
 }
 
 function rerenderAfterBulk() {
-  // dispatch가 markDirty + autosave + queueRender(affects)를 자동 처리
-  // 현재 뷰에 따라 추가 렌더 보장
   if (currentView === 'kanban')   queueRender('kanban');
   if (currentView === 'cards')    queueRender('cards');
   if (currentView === 'list')     queueRender('list');
@@ -56,8 +65,7 @@ async function _bsDeleteCards(view) {
   });
   if (!ok) return;
   const ids = [...sel];
-  // 문서뷰에서 삭제된 카드 보고 있으면 초기화 (모듈 전역 변수)
-  if (ids.includes(currentDocCardId)) currentDocCardId = null;
+  if (ids.includes(currentDocCardId)) setCurrentDocCardId(null);
   dispatch(bulkDeleteCards(ids));
   clearBulkSelection(view);
   rerenderAfterBulk();
@@ -88,15 +96,14 @@ function bulkSetStatus(view, newStatus) {
   toast(sel.size + '개 카드 상태를 변경했습니다');
 }
 
-// ── Bulk Popover 관리 ──────────────────────────────────
 let activeBulkPopover = null;
 
-function closeBulkPopovers() {
+export function closeBulkPopovers() {
   document.querySelectorAll('.bulk-popover.open').forEach(p => p.classList.remove('open'));
   activeBulkPopover = null;
 }
 
-function openBulkPopover(popEl) {
+export function openBulkPopover(popEl) {
   if (activeBulkPopover === popEl) { closeBulkPopovers(); return; }
   closeBulkPopovers();
   popEl.classList.add('open');
@@ -221,7 +228,7 @@ function buildStatusPopover(view, anchorBtn) {
   return pop;
 }
 
-function initBulkBar(view) {
+export function initBulkBar(view) {
   const bar      = document.getElementById(view + '-bulk-bar');
   if (!bar || bar._bulkInit) return;
   bar._bulkInit  = true;

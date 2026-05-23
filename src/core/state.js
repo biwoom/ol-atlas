@@ -1,13 +1,14 @@
 // src/core/state.js
-// ── 앱 상태 & 영속성 ──────────────────────────────────
+// ── 앱 상태 & S Proxy ──────────────────────────────────
 
-// ══════════════════════════════════════════════════════
-//  DEFAULT STATE
-// ══════════════════════════════════════════════════════
-function makeDefault() {
+import { devLog } from './dev.js';
+import { getState, storeInit } from './store.js';
+import { today } from './utils.js';
+
+export function makeDefault() {
   return {
     meta: {
-      fileId:        'ol-' + Math.random().toString(36).slice(2,10),
+      fileId:        'ol-' + Math.random().toString(36).slice(2, 10),
       title:         'OL Weaving the Wisdom',
       created:       today(),
       version:       '1.0.0',
@@ -24,9 +25,9 @@ function makeDefault() {
       activeTabId:  'board',
     },
     columns: [
-      { id:1, title:'📥 수집',   color:'#1e4a6e' },
-      { id:2, title:'🔍 검토중', color:'#b87820' },
-      { id:3, title:'✅ 정리됨', color:'#2e6644' },
+      { id: 1, title: '📥 수집',   color: '#1e4a6e' },
+      { id: 2, title: '🔍 검토중', color: '#b87820' },
+      { id: 3, title: '✅ 정리됨', color: '#2e6644' },
     ],
     cards: [
       {
@@ -76,22 +77,17 @@ function makeDefault() {
         group: '시작하기',
         tags: ['안내', '시작'],
         priority: 'mid',
-        created: today()
+        created: today(),
       },
     ],
-    userData: { status:{} },
+    userData: { status: {} },
     nextColId:  4,
     nextCardId: 2,
     trash: [],
   };
 }
 
-// ══════════════════════════════════════════════════════
-//  S — store Proxy 어댑터
-//  기존 코드의 `S.xxx` 직접 접근이 store.getState()를 가리키게 함.
-//  Phase 2 완료: 직접 대입(S.xxx = ...) 시 에러를 던짐 (strict mode).
-// ══════════════════════════════════════════════════════
-const S = new Proxy({}, {
+export const S = new Proxy({}, {
   get: function(target, prop) {
     const state = getState();
     return state ? state[prop] : undefined;
@@ -103,8 +99,7 @@ const S = new Proxy({}, {
   },
 });
 
-// store에 state inject (부팅 시 1회 호출)
-function bootState(initial) {
+export function bootState(initial) {
   storeInit(initial);
   devLog('BOOT', 'state injected into store');
 }

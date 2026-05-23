@@ -1,7 +1,7 @@
 // src/core/tag-parser.js
 // ── prefix 태그 파싱 유틸 ──────────────────────────────
 
-function parseTag(tag) {
+export function parseTag(tag) {
   if (typeof tag !== 'string') {
     return { prefix: null, value: String(tag), raw: tag };
   }
@@ -16,7 +16,7 @@ function parseTag(tag) {
   return { prefix: null, value: tag.trim(), raw: tag };
 }
 
-function buildPrefixIndex(cards) {
+export function buildPrefixIndex(cards) {
   const index = {};
   (cards || []).forEach(card => {
     (card.tags || []).forEach(tag => {
@@ -34,7 +34,7 @@ function buildPrefixIndex(cards) {
   return result;
 }
 
-function getFreeTags(cards) {
+export function getFreeTags(cards) {
   const free = new Set();
   (cards || []).forEach(card => {
     (card.tags || []).forEach(tag => {
@@ -45,7 +45,7 @@ function getFreeTags(cards) {
   return [...free].sort();
 }
 
-function countCardsWithPrefixValue(cards, prefix, value) {
+export function countCardsWithPrefixValue(cards, prefix, value) {
   let count = 0;
   (cards || []).forEach(card => {
     if ((card.tags || []).some(tag => {
@@ -56,7 +56,7 @@ function countCardsWithPrefixValue(cards, prefix, value) {
   return count;
 }
 
-function countCardsWithFreeTag(cards, tagValue) {
+export function countCardsWithFreeTag(cards, tagValue) {
   let count = 0;
   (cards || []).forEach(card => {
     if ((card.tags || []).some(tag => {

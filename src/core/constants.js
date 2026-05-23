@@ -1,14 +1,10 @@
 // src/core/constants.js
 // ── 전역 상수 및 공용 헬퍼 ────────────────────────────
 
-'use strict';
+import { S } from './state.js';
+import { dlBlob } from './utils.js';
 
-// ══════════════════════════════════════════════════════
-//  ORIGIN — 하드코딩된 원본 제작자 정보
-//  ※ 이 값은 코드에 고정되어 있으며 UI를 통해 수정할 수 없습니다.
-//  ※ 파일이 포크·배포되어도 이 상수는 HTML 소스에 그대로 유지됩니다.
-// ══════════════════════════════════════════════════════
-const ORIGIN = Object.freeze({
+export const ORIGIN = Object.freeze({
   author    : '비움',
   site      : 'olbit.org',
   copyright : 'Copyright © 2026 biwoom',
@@ -16,10 +12,7 @@ const ORIGIN = Object.freeze({
   tool      : 'OL · ATLAS · Weaving the Wisdom',
 });
 
-// ══════════════════════════════════════════════════════
-//  OL_PROJECTS — 올확장 프로젝트 카탈로그 (홈 화면 표시)
-// ══════════════════════════════════════════════════════
-const OL_PROJECTS = Object.freeze([
+export const OL_PROJECTS = Object.freeze([
   {
     name: '붓다스토리',
     desc: '붓다의 생애를 단행본 형식으로 엮은 OL 콘텐츠 파일',
@@ -40,12 +33,7 @@ const OL_PROJECTS = Object.freeze([
   },
 ]);
 
-// ══════════════════════════════════════════════════════
-//  TASK 0: 공용 헬퍼
-// ══════════════════════════════════════════════════════
-
-// 신규 SVG 아이콘 (T2/T6에서 사용)
-const ICONS_X = {
+export const ICONS_X = {
   chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
   chevronDown:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
   search:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
@@ -54,8 +42,7 @@ const ICONS_X = {
   home:         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
 };
 
-// 안전한 파일명 슬러그 (T3에서 사용)
-function slugFilename(s, fallback) {
+export function slugFilename(s, fallback) {
   const t = String(s || '').trim()
     .replace(/[\\/:*?"<>|]/g, '')
     .replace(/\s+/g, '-')
@@ -64,8 +51,7 @@ function slugFilename(s, fallback) {
   return t || (fallback || 'untitled');
 }
 
-// 다중 .md 순차 다운로드 (JSZip 없이)
-function dlBlobSequential(items, doneCb) {
+export function dlBlobSequential(items, doneCb) {
   let i = 0;
   function step() {
     if (i >= items.length) { if (doneCb) doneCb(); return; }
@@ -75,32 +61,22 @@ function dlBlobSequential(items, doneCb) {
   step();
 }
 
-// ══════════════════════════════════════════════════════
-//  CONSTANTS
-// ══════════════════════════════════════════════════════
-// Task 1: 파스텔 15색 (5×3 그리드)
-const COL_COLORS = [
-  // Row 1 — 따뜻한 톤
+export const COL_COLORS = [
   '#fecaca', '#fed7aa', '#fef3c7', '#fef08a', '#d9f99d',
-  // Row 2 — 시원한 톤
   '#bbf7d0', '#a7f3d0', '#a5f3fc', '#bae6fd', '#bfdbfe',
-  // Row 3 — 보라/뉴트럴
   '#c7d2fe', '#ddd6fe', '#f5d0fe', '#fbcfe8', '#e7e5e4',
 ];
 
-// ══════════════════════════════════════════════════════
-//  v1.5: URL Slug 헬퍼
-// ══════════════════════════════════════════════════════
-function titleToSlug(title) {
+export function titleToSlug(title) {
   return String(title || '').trim()
-    .replace(/[\\/:*?"<>|#&=%]/g, '')   // URL 예약 문자 제거
+    .replace(/[\\/:*?"<>|#&=%]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
 }
 
-function ensureUniqueSlug(slug, excludeId) {
+export function ensureUniqueSlug(slug, excludeId) {
   if (!slug) slug = 'untitled';
   const others = (S.cards || []).filter(c => c.id !== excludeId).map(c => c.slug);
   if (!others.includes(slug)) return slug;
@@ -109,10 +85,7 @@ function ensureUniqueSlug(slug, excludeId) {
   return slug + '-' + n;
 }
 
-// ══════════════════════════════════════════════════════
-//  v1.5: 이미지 토큰 헬퍼
-// ══════════════════════════════════════════════════════
-function newImgId(card) {
+export function newImgId(card) {
   card.images = card.images || {};
   const ids = Object.keys(card.images);
   let max = 0;
@@ -123,18 +96,13 @@ function newImgId(card) {
   return 'img-' + (max + 1);
 }
 
-// alt 텍스트 안전화 — `]` 문자 차단
-function safeImgAlt(alt) {
+export function safeImgAlt(alt) {
   return String(alt || '').replace(/[\[\]]/g, '').slice(0, 100).trim();
 }
 
-// 본문의 표준 ![alt](src) → [img:id] 토큰으로 변환
-// 1차: base64 data URL (안전한 문자만 포함)
-// 2차: 일반 URL 이미지
-function bodyImagesToTokens(card) {
+export function bodyImagesToTokens(card) {
   if (!card.body) return;
   card.images = card.images || {};
-  // 1차: data URL (base64 알파벳에 ')' 없으므로 단순 패턴으로 충분)
   card.body = card.body.replace(
     /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g,
     (m, alt, src) => {
@@ -143,7 +111,6 @@ function bodyImagesToTokens(card) {
       return '[img:' + id + ']';
     }
   );
-  // 2차: 일반 URL 이미지
   card.body = card.body.replace(
     /!\[([^\]]*)\]\(([^)\s]+)\)/g,
     (m, alt, src) => {
@@ -154,8 +121,7 @@ function bodyImagesToTokens(card) {
   );
 }
 
-// 토큰 → 표준 마크다운으로 복원 (.md 내보내기 시)
-function bodyTokensToStandardMd(card) {
+export function bodyTokensToStandardMd(card) {
   if (!card || !card.body) return (card && card.body) || '';
   if (!card.images) return card.body;
   return card.body.replace(/\[img:([a-z0-9_-]+)(?:\s+([^\]]*))?\]/gi,

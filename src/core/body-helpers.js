@@ -1,10 +1,12 @@
 // src/core/body-helpers.js
-// ── 본문 헬퍼 — 마크다운 단일 모드 ──────────────────
+// ── 본문 헬퍼 ────────────────────────────────────────
 
-function cardPreviewText(card) {
+import { stripMarkdown } from './markdown.js';
+
+export function cardPreviewText(card) {
   return stripMarkdown(card && card.body || '');
 }
 
-function cardSearchText(card) {
+export function cardSearchText(card) {
   return card ? (card.body || '') : '';
 }

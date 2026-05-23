@@ -1,15 +1,16 @@
 // src/actions/column-actions.js
 // ── 컬럼 도메인 액션 + reducer ────────────────────────
 
-// ── Action Types ──────────────────────────────────────
-const COLUMN_CREATE       = 'COLUMN_CREATE';
-const COLUMN_RENAME       = 'COLUMN_RENAME';
-const COLUMN_DELETE       = 'COLUMN_DELETE';
-const COLUMN_COLOR_UPDATE = 'COLUMN_COLOR_UPDATE';
+import { devLog } from '../core/dev.js';
+import { registerReducer } from '../core/action.js';
+import { COL_COLORS } from '../core/constants.js';
 
-// ── Action Creators ───────────────────────────────────
+export const COLUMN_CREATE       = 'COLUMN_CREATE';
+export const COLUMN_RENAME       = 'COLUMN_RENAME';
+export const COLUMN_DELETE       = 'COLUMN_DELETE';
+export const COLUMN_COLOR_UPDATE = 'COLUMN_COLOR_UPDATE';
 
-function createColumn(col) {
+export function createColumn(col) {
   return {
     type: COLUMN_CREATE,
     payload: { col },
@@ -17,7 +18,7 @@ function createColumn(col) {
   };
 }
 
-function renameColumn(id, title) {
+export function renameColumn(id, title) {
   return {
     type: COLUMN_RENAME,
     payload: { id, title },
@@ -25,8 +26,7 @@ function renameColumn(id, title) {
   };
 }
 
-// v0.6: 컬럼 삭제 시 해당 컬럼의 카드도 모두 삭제 (휴지통 이동 아님)
-function deleteColumn(id) {
+export function deleteColumn(id) {
   return {
     type: COLUMN_DELETE,
     payload: { id },
@@ -34,7 +34,7 @@ function deleteColumn(id) {
   };
 }
 
-function updateColumnColor(id, color) {
+export function updateColumnColor(id, color) {
   return {
     type: COLUMN_COLOR_UPDATE,
     payload: { id, color },
@@ -42,7 +42,6 @@ function updateColumnColor(id, color) {
   };
 }
 
-// ── Reducer ───────────────────────────────────────────
 function columnReducer(state, action) {
   switch (action.type) {
 
@@ -61,19 +60,16 @@ function columnReducer(state, action) {
       const { id, title } = action.payload;
       return {
         ...state,
-        columns: state.columns.map(function(c) {
-          return c.id === id ? Object.assign({}, c, { title }) : c;
-        }),
+        columns: state.columns.map(c => c.id === id ? Object.assign({}, c, { title }) : c),
       };
     }
 
     case COLUMN_DELETE: {
       const { id } = action.payload;
-      // v0.6: 해당 컬럼의 카드 즉시 삭제 (휴지통 이동 아님)
       return {
         ...state,
-        columns: state.columns.filter(function(c) { return c.id !== id; }),
-        cards: state.cards.filter(function(c) { return c.colId !== id; }),
+        columns: state.columns.filter(c => c.id !== id),
+        cards: state.cards.filter(c => c.colId !== id),
       };
     }
 
@@ -81,9 +77,7 @@ function columnReducer(state, action) {
       const { id, color } = action.payload;
       return {
         ...state,
-        columns: state.columns.map(function(c) {
-          return c.id === id ? Object.assign({}, c, { color }) : c;
-        }),
+        columns: state.columns.map(c => c.id === id ? Object.assign({}, c, { color }) : c),
       };
     }
 

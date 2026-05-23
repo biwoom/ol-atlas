@@ -1,25 +1,33 @@
 // src/actions/card-actions.js
 // ── 카드 도메인 액션 + reducer ────────────────────────
 
+import { devLog } from '../core/dev.js';
+import { registerReducer } from '../core/action.js';
+import { normalizeCard } from '../core/normalize.js';
+import { titleToSlug, COL_COLORS } from '../core/constants.js';
+import { today } from '../core/utils.js';
+
+export const VALID_PRIORITIES = ['high', 'mid', 'low'];
+
 // ── Action Types ──────────────────────────────────────
-const CARD_CREATE      = 'CARD_CREATE';
-const CARD_UPDATE      = 'CARD_UPDATE';
-const CARD_DELETE      = 'CARD_DELETE';     // 휴지통으로
-const CARD_RESTORE     = 'CARD_RESTORE';    // 휴지통에서 복원
-const CARD_MOVE        = 'CARD_MOVE';       // 드래그&드롭 (colId + 위치 변경)
-const CARD_PURGE       = 'CARD_PURGE';      // 휴지통에서 영구 삭제
-const CARD_PURGE_ALL   = 'CARD_PURGE_ALL';  // 휴지통 전체 비우기
-const STATUS_SET       = 'STATUS_SET';
-const STATUS_CLEAR     = 'STATUS_CLEAR';
-const STATUS_BULK      = 'STATUS_BULK';
-const CARD_BULK_DELETE = 'CARD_BULK_DELETE';
-const CARD_BULK_GROUP  = 'CARD_BULK_GROUP';
-const CARD_BULK_COLUMN = 'CARD_BULK_COLUMN';
-const IMPORT_MERGE     = 'IMPORT_MERGE';
+export const CARD_CREATE      = 'CARD_CREATE';
+export const CARD_UPDATE      = 'CARD_UPDATE';
+export const CARD_DELETE      = 'CARD_DELETE';
+export const CARD_RESTORE     = 'CARD_RESTORE';
+export const CARD_MOVE        = 'CARD_MOVE';
+export const CARD_PURGE       = 'CARD_PURGE';
+export const CARD_PURGE_ALL   = 'CARD_PURGE_ALL';
+export const STATUS_SET       = 'STATUS_SET';
+export const STATUS_CLEAR     = 'STATUS_CLEAR';
+export const STATUS_BULK      = 'STATUS_BULK';
+export const CARD_BULK_DELETE = 'CARD_BULK_DELETE';
+export const CARD_BULK_GROUP  = 'CARD_BULK_GROUP';
+export const CARD_BULK_COLUMN = 'CARD_BULK_COLUMN';
+export const IMPORT_MERGE     = 'IMPORT_MERGE';
 
 // ── Action Creators ───────────────────────────────────
 
-function createCard(card, status) {
+export function createCard(card, status) {
   return {
     type: CARD_CREATE,
     payload: { card, status: status || 'wait' },
@@ -27,7 +35,7 @@ function createCard(card, status) {
   };
 }
 
-function updateCard(id, patch) {
+export function updateCard(id, patch) {
   return {
     type: CARD_UPDATE,
     payload: { id, patch },
@@ -35,7 +43,7 @@ function updateCard(id, patch) {
   };
 }
 
-function deleteCard(id) {
+export function deleteCard(id) {
   return {
     type: CARD_DELETE,
     payload: { id },
@@ -43,7 +51,7 @@ function deleteCard(id) {
   };
 }
 
-function restoreCard(id) {
+export function restoreCard(id) {
   return {
     type: CARD_RESTORE,
     payload: { id },
@@ -51,8 +59,7 @@ function restoreCard(id) {
   };
 }
 
-// insertBeforeId: 이 카드 앞에 삽입. null이면 컬럼 마지막에 추가.
-function moveCard(id, toColId, insertBeforeId) {
+export function moveCard(id, toColId, insertBeforeId) {
   return {
     type: CARD_MOVE,
     payload: { id, toColId, insertBeforeId: insertBeforeId == null ? null : insertBeforeId },
@@ -60,7 +67,7 @@ function moveCard(id, toColId, insertBeforeId) {
   };
 }
 
-function purgeCard(id) {
+export function purgeCard(id) {
   return {
     type: CARD_PURGE,
     payload: { id },
@@ -68,7 +75,7 @@ function purgeCard(id) {
   };
 }
 
-function purgeAllCards() {
+export function purgeAllCards() {
   return {
     type: CARD_PURGE_ALL,
     payload: {},
@@ -76,7 +83,7 @@ function purgeAllCards() {
   };
 }
 
-function setStatus(cardId, status) {
+export function setStatus(cardId, status) {
   return {
     type: STATUS_SET,
     payload: { cardId, status },
@@ -84,7 +91,7 @@ function setStatus(cardId, status) {
   };
 }
 
-function clearStatus(cardId) {
+export function clearStatus(cardId) {
   return {
     type: STATUS_CLEAR,
     payload: { cardId },
@@ -92,7 +99,7 @@ function clearStatus(cardId) {
   };
 }
 
-function setBulkStatus(ids, status) {
+export function setBulkStatus(ids, status) {
   return {
     type: STATUS_BULK,
     payload: { ids, status },
@@ -100,7 +107,7 @@ function setBulkStatus(ids, status) {
   };
 }
 
-function bulkDeleteCards(ids) {
+export function bulkDeleteCards(ids) {
   return {
     type: CARD_BULK_DELETE,
     payload: { ids },
@@ -108,7 +115,7 @@ function bulkDeleteCards(ids) {
   };
 }
 
-function bulkSetGroup(ids, group) {
+export function bulkSetGroup(ids, group) {
   return {
     type: CARD_BULK_GROUP,
     payload: { ids, group },
@@ -116,7 +123,7 @@ function bulkSetGroup(ids, group) {
   };
 }
 
-function bulkSetColumn(ids, colId) {
+export function bulkSetColumn(ids, colId) {
   return {
     type: CARD_BULK_COLUMN,
     payload: { ids, colId },
@@ -124,7 +131,7 @@ function bulkSetColumn(ids, colId) {
   };
 }
 
-function importMerge(incoming, strategy) {
+export function importMerge(incoming, strategy) {
   return {
     type: IMPORT_MERGE,
     payload: { incoming, strategy },
@@ -132,11 +139,11 @@ function importMerge(incoming, strategy) {
   };
 }
 
-// ── Slug 유일성 헬퍼 (reducer 내부용, S 접근 금지) ────
+// ── Slug 유일성 헬퍼 (reducer 내부용) ────────────────
 function _ensureUniqueSlugInState(state, slug, excludeId) {
   if (!slug) slug = 'untitled';
   const used = new Set(
-    (state.cards || []).filter(function(c) { return c.id !== excludeId; }).map(function(c) { return c.slug; })
+    (state.cards || []).filter(c => c.id !== excludeId).map(c => c.slug)
   );
   if (!used.has(slug)) return slug;
   let n = 2;
@@ -166,12 +173,11 @@ function cardReducer(state, action) {
 
     case CARD_UPDATE: {
       const { id, patch } = action.payload;
-      // status는 userData로 분리
       const statusVal = patch.status;
       const cardPatch = Object.assign({}, patch);
       delete cardPatch.status;
 
-      const newCards = state.cards.map(function(c) {
+      const newCards = state.cards.map(c => {
         if (c.id !== id) return c;
         const merged = Object.assign({}, c, cardPatch);
         if (cardPatch.slug !== undefined) {
@@ -189,13 +195,13 @@ function cardReducer(state, action) {
 
     case CARD_DELETE: {
       const { id } = action.payload;
-      const card = state.cards.find(function(c) { return c.id === id; });
+      const card = state.cards.find(c => c.id === id);
       if (!card) return state;
       const newStatus = Object.assign({}, state.userData.status);
       delete newStatus[id];
       return {
         ...state,
-        cards: state.cards.filter(function(c) { return c.id !== id; }),
+        cards: state.cards.filter(c => c.id !== id),
         trash: [Object.assign({}, card, { _trashedAt: new Date().toISOString() }), ...(state.trash || [])],
         userData: Object.assign({}, state.userData, { status: newStatus }),
       };
@@ -204,13 +210,12 @@ function cardReducer(state, action) {
     case CARD_RESTORE: {
       const { id } = action.payload;
       const trash = state.trash || [];
-      const idx = trash.findIndex(function(c) { return c.id === id; });
+      const idx = trash.findIndex(c => c.id === id);
       if (idx < 0) return state;
       const trashCard = Object.assign({}, trash[idx]);
       delete trashCard._trashedAt;
-      // ID 충돌 방지
       let restoreId = trashCard.id;
-      if (state.cards.find(function(c) { return c.id === restoreId; })) {
+      if (state.cards.find(c => c.id === restoreId)) {
         restoreId = state.nextCardId;
       }
       trashCard.id = restoreId;
@@ -220,20 +225,18 @@ function cardReducer(state, action) {
       return {
         ...state,
         cards: [...state.cards, trashCard],
-        trash: trash.filter(function(_, i) { return i !== idx; }),
+        trash: trash.filter((_, i) => i !== idx),
         nextCardId: newNextCardId,
       };
     }
 
     case CARD_MOVE: {
-      // v0.6 onDrop 로직과 1:1 대응
       const { id, toColId, insertBeforeId } = action.payload;
-      const card = state.cards.find(function(c) { return c.id === id; });
+      const card = state.cards.find(c => c.id === id);
       if (!card) return state;
       const movedCard = Object.assign({}, card, { colId: toColId });
-      let newCards = state.cards.filter(function(c) { return c.id !== id; });
+      let newCards = state.cards.filter(c => c.id !== id);
       if (insertBeforeId === null || insertBeforeId === undefined) {
-        // 컬럼 마지막에 추가 (v0.6: 해당 컬럼 마지막 카드 다음)
         let lastIdx = -1;
         for (let i = newCards.length - 1; i >= 0; i--) {
           if (newCards[i].colId === toColId) { lastIdx = i; break; }
@@ -244,7 +247,7 @@ function cardReducer(state, action) {
           newCards = [...newCards.slice(0, lastIdx + 1), movedCard, ...newCards.slice(lastIdx + 1)];
         }
       } else {
-        const idx = newCards.findIndex(function(c) { return c.id === insertBeforeId; });
+        const idx = newCards.findIndex(c => c.id === insertBeforeId);
         if (idx === -1) {
           newCards = [...newCards, movedCard];
         } else {
@@ -258,7 +261,7 @@ function cardReducer(state, action) {
       const { id } = action.payload;
       return {
         ...state,
-        trash: (state.trash || []).filter(function(c) { return c.id !== id; }),
+        trash: (state.trash || []).filter(c => c.id !== id),
       };
     }
 
@@ -290,7 +293,7 @@ function cardReducer(state, action) {
     case STATUS_BULK: {
       const { ids, status } = action.payload;
       const newStatus = Object.assign({}, state.userData.status);
-      ids.forEach(function(id) { newStatus[id] = status; });
+      ids.forEach(id => { newStatus[id] = status; });
       return {
         ...state,
         userData: Object.assign({}, state.userData, { status: newStatus }),
@@ -302,15 +305,15 @@ function cardReducer(state, action) {
       const idSet = new Set(ids.map(Number));
       const now = new Date().toISOString();
       const toTrash = state.cards
-        .filter(function(c) { return idSet.has(c.id); })
-        .map(function(c) { return Object.assign({}, c, { _trashedAt: now }); });
+        .filter(c => idSet.has(c.id))
+        .map(c => Object.assign({}, c, { _trashedAt: now }));
       const newStatus = {};
-      Object.keys(state.userData.status || {}).forEach(function(k) {
+      Object.keys(state.userData.status || {}).forEach(k => {
         if (!idSet.has(Number(k))) newStatus[k] = state.userData.status[k];
       });
       return {
         ...state,
-        cards: state.cards.filter(function(c) { return !idSet.has(c.id); }),
+        cards: state.cards.filter(c => !idSet.has(c.id)),
         trash: [...toTrash, ...(state.trash || [])],
         userData: Object.assign({}, state.userData, { status: newStatus }),
       };
@@ -321,9 +324,7 @@ function cardReducer(state, action) {
       const idSet = new Set(ids.map(Number));
       return {
         ...state,
-        cards: state.cards.map(function(c) {
-          return idSet.has(c.id) ? Object.assign({}, c, { group }) : c;
-        }),
+        cards: state.cards.map(c => idSet.has(c.id) ? Object.assign({}, c, { group }) : c),
       };
     }
 
@@ -332,9 +333,7 @@ function cardReducer(state, action) {
       const idSet = new Set(ids.map(Number));
       return {
         ...state,
-        cards: state.cards.map(function(c) {
-          return idSet.has(c.id) ? Object.assign({}, c, { colId }) : c;
-        }),
+        cards: state.cards.map(c => idSet.has(c.id) ? Object.assign({}, c, { colId }) : c),
       };
     }
 
@@ -342,14 +341,14 @@ function cardReducer(state, action) {
       const { incoming, strategy } = action.payload;
       let ns = { ...state };
       const nameToId = {};
-      (ns.columns || []).forEach(function(col) { nameToId[col.title] = col.id; });
+      (ns.columns || []).forEach(col => { nameToId[col.title] = col.id; });
 
-      const existingIds = new Set((ns.cards || []).map(function(c) { return c.id; }));
+      const existingIds = new Set((ns.cards || []).map(c => c.id));
       const existingTitleCol = new Set(
-        (ns.cards || []).map(function(c) { return c.title + '\x00' + (c.colId || ''); })
+        (ns.cards || []).map(c => c.title + '\x00' + (c.colId || ''))
       );
 
-      incoming.forEach(function(card) {
+      incoming.forEach(card => {
         const colName = card.column || card.status || '';
         let colId = nameToId[colName];
         if (!colId && colName) {
@@ -368,22 +367,20 @@ function cardReducer(state, action) {
         const titleDup = !idDup && existingTitleCol.has(titleKey);
         const isDup    = idDup || titleDup;
 
-        const makeCard = function(id) {
-          return normalizeCard({
-            id,
-            colId,
-            title:    card.title    || '',
-            body:     card.bodyMd   || card.body || '',
-            group:    card.group    || '',
-            tags:     Array.isArray(card.tags) ? card.tags : [],
-            priority: VALID_PRIORITIES.includes(card.priority) ? card.priority : 'mid',
-            created:  card.created  || card.createdAt || today(),
-            images:   (card.images && typeof card.images === 'object') ? card.images : {},
-            slug:     card.slug     || '',
-          });
-        };
+        const makeCard = id => normalizeCard({
+          id,
+          colId,
+          title:    card.title    || '',
+          body:     card.bodyMd   || card.body || '',
+          group:    card.group    || '',
+          tags:     Array.isArray(card.tags) ? card.tags : [],
+          priority: VALID_PRIORITIES.includes(card.priority) ? card.priority : 'mid',
+          created:  card.created  || card.createdAt || today(),
+          images:   (card.images && typeof card.images === 'object') ? card.images : {},
+          slug:     card.slug     || '',
+        });
 
-        const _setLearnStatus = function(id, ls) {
+        const _setLearnStatus = (id, ls) => {
           if (ls && ['wait', 'doing', 'done'].includes(ls)) {
             ns = Object.assign({}, ns, {
               userData: Object.assign({}, ns.userData, {
@@ -410,7 +407,7 @@ function cardReducer(state, action) {
           // 아무것도 안 함
         } else if (strategy === 'overwrite') {
           if (idDup) {
-            const idx = ns.cards.findIndex(function(c) { return c.id === card.id; });
+            const idx = ns.cards.findIndex(c => c.id === card.id);
             if (idx >= 0) {
               const newCards = ns.cards.slice();
               newCards[idx] = makeCard(card.id);
@@ -418,9 +415,7 @@ function cardReducer(state, action) {
               _setLearnStatus(card.id, card.learnStatus);
             }
           } else {
-            const idx = ns.cards.findIndex(function(c) {
-              return c.title + '\x00' + (c.colId || '') === titleKey;
-            });
+            const idx = ns.cards.findIndex(c => c.title + '\x00' + (c.colId || '') === titleKey);
             if (idx >= 0) {
               const targetId = ns.cards[idx].id;
               const newCards = ns.cards.slice();

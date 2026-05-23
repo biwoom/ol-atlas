@@ -1,17 +1,31 @@
 // src/core/router.js
 // ── 뷰 라우터 ────────────────────────────────────────
 
-// ══════════════════════════════════════════════════════
-//  ROUTER
-// ══════════════════════════════════════════════════════
-let currentView = 'kanban';
-let currentDocCardId = null;  // Phase 4: 문서뷰에서 현재 보고 있는 카드 ID
+import { devLog } from './dev.js';
+import { queueRender } from './render-queue.js';
+import { S } from './state.js';
+import { customConfirm } from '../ui/confirm-modal.js';
+import { toast } from './utils.js';
 
-function switchView(v) {
-  // 문서뷰 인라인 편집 중에 다른 뷰로 떠나려 하면 가드 (async 경로로 위임)
-  if (currentView === 'document' && v !== 'document'
-      && typeof dvEditing !== 'undefined' && dvEditing
-      && typeof isDvEditDirty === 'function' && isDvEditDirty()) {
+export let currentView = 'kanban';
+export let currentDocCardId = null;
+export function setCurrentDocCardId(id) { currentDocCardId = id; }
+export function updateHash(v) { _updateHash(v); }
+
+// 등록 패턴: docview-inline.js에서 편집 가드를 등록
+let _docViewGuard = null;
+export function registerDocViewGuard(fn) { _docViewGuard = fn; }
+
+// 등록 패턴: bulk-select.js에서 선택 초기화 콜백을 등록
+let _viewChangeCb = null;
+export function registerViewChangeCb(fn) { _viewChangeCb = fn; }
+
+// 등록 패턴: events.js에서 뷰 전환 후 훅 등록 (모바일 사이드바 닫기 등)
+const _postSwitchHooks = [];
+export function registerPostSwitchHook(fn) { _postSwitchHooks.push(fn); }
+
+export function switchView(v) {
+  if (currentView === 'document' && v !== 'document' && _docViewGuard && _docViewGuard()) {
     _switchViewAsync(v);
     return;
   }
@@ -30,13 +44,7 @@ async function _switchViewAsync(v) {
 }
 
 function _switchViewCore(v) {
-  if (v !== 'document') {
-    dvEditing = false;
-    dvEditOriginal = '';
-  }
-  // 뷰 전환 시 이전 뷰의 선택 상태 초기화
-  if (currentView === 'cards')    { clearBulkSelection('cg'); closeBulkPopovers(); }
-  if (currentView === 'list')     { clearBulkSelection('lv'); closeBulkPopovers(); }
+  if (_viewChangeCb) _viewChangeCb(currentView, v);
 
   currentView = v;
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -53,20 +61,17 @@ function _switchViewCore(v) {
   if (v === 'home')     queueRender('home');
   if (v === 'trash')    queueRender('trash');
 
-  // 마지막 뷰 저장 (home은 저장 안 함)
   if (v !== 'home') {
     try { localStorage.setItem('ol_last_view', v); } catch(_) {}
   }
 
-  // v1.5: URL hash 업데이트
-  updateHash(v);
+  _updateHash(v);
+  _postSwitchHooks.forEach(fn => fn(v));
 }
 
-// ── v1.5: URL hash 동기화 ──────────────────────────────
-// _suppressHashUpdate: routeFromHash → switchView 시 무한루프 방지 가드
 let _suppressHashUpdate = false;
 
-function updateHash(v) {
+function _updateHash(v) {
   if (_suppressHashUpdate) return;
   try {
     let target;
@@ -75,37 +80,30 @@ function updateHash(v) {
       const slug = (card && card.slug) ? card.slug : String(currentDocCardId);
       target = '#document/' + slug;
     } else if (v === 'home') {
-      target = location.pathname + location.search;   // # 없는 깨끗한 URL
+      target = location.pathname + location.search;
     } else {
       target = '#' + v;
     }
-    // 같은 hash면 replaceState 안 함 (popstate 방지)
     const current = location.hash || '';
     if (current === target || location.href.endsWith(target)) return;
     history.replaceState(null, '', target);
   } catch(_) {}
 }
 
-// ══════════════════════════════════════════════════════
-//  ④ DOCUMENT VIEW (Phase 4)
-// ══════════════════════════════════════════════════════
-
-// 1차원 카드 순서: 컬럼 순서 → 컬럼 내 카드 순서
-function getOrderedCardList() {
+export function getOrderedCardList() {
   const result = [];
   S.columns.forEach(col => {
     S.cards.forEach(c => {
       if (c.colId === col.id) result.push(c);
     });
   });
-  // 컬럼 매칭 안 된 카드도 마지막에 부착 (방어적)
   S.cards.forEach(c => {
     if (!result.includes(c)) result.push(c);
   });
   return result;
 }
 
-function getPrevNextCard(cardId) {
+export function getPrevNextCard(cardId) {
   const list = getOrderedCardList();
   const idx = list.findIndex(c => c.id === cardId);
   if (idx === -1) return { prev: null, next: null, idx: -1, total: list.length };
@@ -117,8 +115,7 @@ function getPrevNextCard(cardId) {
   };
 }
 
-// ── v1.5: Hash 라우터 ──────────────────────────────────
-function routeFromHash() {
+export function routeFromHash() {
   let hash;
   try { hash = decodeURIComponent(location.hash.slice(1)); }
   catch(_) { hash = location.hash.slice(1); }
@@ -127,14 +124,14 @@ function routeFromHash() {
   try {
     if (!hash || hash === 'home') {
       switchView('home');
-    } else if (['kanban','cards','list','about','trash'].includes(hash)) {
+    } else if (['kanban', 'cards', 'list', 'about', 'trash'].includes(hash)) {
       switchView(hash);
     } else if (hash.startsWith('document/')) {
       const slug = hash.slice('document/'.length);
       const card = (S.cards || []).find(c => c.slug === slug)
                 || (S.cards || []).find(c => String(c.id) === slug);
       if (card) {
-        currentDocCardId = card.id;
+        setCurrentDocCardId(card.id);
         switchView('document');
       } else {
         toast('해당 문서를 찾을 수 없습니다', 'warning');

@@ -1,15 +1,15 @@
 // src/components/shared/dirty-indicator.js
 
+import { isDirty } from '../../core/dirty.js';
+import { subscribe } from '../../core/store.js';
+
 let _dirtyEl = null;
 let _fadeTimer = null;
 const DIRTY_FADE_DELAY = 5000;
 
 function _ensureDirtyEl() {
   if (_dirtyEl && _dirtyEl.isConnected) return _dirtyEl;
-  // 헤더에 삽입 시도
-  const header = document.querySelector(
-    '.h-header, #h-header, .app-header, header'
-  );
+  const header = document.querySelector('.h-header, #h-header, .app-header, header');
   _dirtyEl = document.createElement('div');
   _dirtyEl.id = 'ol-dirty-indicator';
   _dirtyEl.className = 'dirty-ind';
@@ -24,7 +24,7 @@ function _ensureDirtyEl() {
   return _dirtyEl;
 }
 
-function renderDirtyIndicator() {
+export function renderDirtyIndicator() {
   const el = _ensureDirtyEl();
   const dirty = isDirty();
   clearTimeout(_fadeTimer);

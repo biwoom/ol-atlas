@@ -1,26 +1,28 @@
 // src/core/tag-filter.js
 // ── 태그 필터 + 카드뷰 컬럼 필터 상태 ──────────────
 
-// ══════════════════════════════════════════════════════
-//  TAG FILTER (카드 뷰)
-// ══════════════════════════════════════════════════════
-// Task 2: 카드뷰 컬럼 필터 (사이드바 연동)
-let sbTagQuery = '';        // 사이드바 태그 검색 키워드
-// Task 6: 문서뷰 트리 펼침 상태
-const sbDocExpanded = {};
-// v1.5: 현재 편집 중인 카드 (이미지 토큰 컨텍스트 + 미리보기 렌더링)
-let _currentEditingCard = null;
+import { S } from './state.js';
+import { queueRender } from './render-queue.js';
+import { selectedTags } from '../ui/custom-select.js';
+import { closeSearch } from '../data/search/search.js';
 
-function getAllTags() {
+export let sbTagQuery = '';
+export function setSbTagQuery(q) { sbTagQuery = q; }
+export const sbDocExpanded = {};
+export let _currentEditingCard = null;
+
+export function setCurrentEditingCard(card) { _currentEditingCard = card; }
+
+export function getAllTags() {
   const map = {};
-  S.cards.forEach(c => (c.tags||[]).forEach(t => {
+  S.cards.forEach(c => (c.tags || []).forEach(t => {
     const k = t.trim();
-    if (k) map[k] = (map[k]||0) + 1;
+    if (k) map[k] = (map[k] || 0) + 1;
   }));
   return map;
 }
 
-function renderTagFilterDropdown() {
+export function renderTagFilterDropdown() {
   const container = document.getElementById('tfd-items');
   container.innerHTML = '';
   const tagMap = getAllTags();
@@ -63,7 +65,7 @@ function renderTagFilterDropdown() {
   });
 }
 
-function updateTagFilterBtn() {
+export function updateTagFilterBtn() {
   const btn   = document.getElementById('tag-filter-btn');
   const badge = document.getElementById('tag-filter-badge');
   const label = document.getElementById('tag-filter-label');
@@ -81,12 +83,10 @@ function updateTagFilterBtn() {
   }
 }
 
-// 태그 필터 드롭다운 토글
 document.getElementById('tag-filter-btn').addEventListener('click', e => {
   e.stopPropagation();
   const dd = document.getElementById('tag-filter-dropdown');
   const isOpen = dd.classList.contains('open');
-  // 다른 드롭다운 닫기
   closeSearch();
   if (isOpen) {
     dd.classList.remove('open');
@@ -104,7 +104,6 @@ document.getElementById('tfd-clear-btn').addEventListener('click', e => {
   queueRender('cards');
 });
 
-// 외부 클릭 시 태그 드롭다운 닫기
 document.addEventListener('click', e => {
   const wrap = document.getElementById('tag-filter-wrap');
   if (!wrap.contains(e.target)) {

@@ -1,7 +1,20 @@
 // src/components/cardgrid.js
 // ── 카드 그리드 뷰 + 라쏘 선택 ─────────────────────
 
-function renderCards() {
+import { S }                        from '../../core/state.js';
+import { ce }                       from '../../core/utils.js';
+import { buildEmptyState }          from '../../core/normalize.js';
+import { cardPreviewText }          from '../../core/body-helpers.js';
+import { parseTag }                 from '../../core/tag-parser.js';
+import { subscribe }                from '../../core/store.js';
+import { selectedColId, selectedTags, sbFilter, setSelectedColId } from '../../ui/custom-select.js';
+import { queueRender }              from '../../core/render-queue.js';
+import { cgSelected, updateBulkBar, initBulkBar, toggleSelectAll } from './bulk-select.js';
+import { openCardModal }            from './card-modal.js';
+import { openDocCard }              from '../shared/docview.js';
+import { getCgSort, setCgSort }     from './listview.js';
+
+export function renderCards() {
   const grid = document.getElementById('cg-grid');
   grid.innerHTML = '';
   const fg = document.getElementById('cg-fg').value;
@@ -19,7 +32,7 @@ function renderCards() {
   if (selectedTags.size > 0) {
     cards = cards.filter(c => (c.tags||[]).some(t => selectedTags.has(t.trim())));
   }
-  if (typeof sbFilter !== 'undefined' && sbFilter.prefix) {
+  if (sbFilter.prefix) {
     const { prefix: fp, value: fv } = sbFilter.prefix;
     cards = cards.filter(c => (c.tags||[]).some(tag => {
       const p = parseTag(tag);
@@ -27,19 +40,19 @@ function renderCards() {
     }));
   }
 
-  // ── 정렬 ──────────────────────────────────────────────
   const sortEl = document.getElementById('cg-sort');
   if (sortEl) {
-    sortEl.value = cgSort;  // 초기값 복원
-    cgSort = sortEl.value;
+    sortEl.value = getCgSort();
+    setCgSort(sortEl.value);
   }
+  const cgSort = getCgSort();
   const PRIO_ORD = { high:0, mid:1, low:2 };
   const STAT_ORD = { doing:0, wait:1, done:2 };
   if (cgSort === 'title')    cards.sort((a,b)=>(a.title||'').localeCompare(b.title||'','ko'));
   if (cgSort === 'priority') cards.sort((a,b)=>(PRIO_ORD[a.priority]??1)-(PRIO_ORD[b.priority]??1));
   if (cgSort === 'status')   cards.sort((a,b)=>(STAT_ORD[S.userData.status[a.id]||'wait'])-(STAT_ORD[S.userData.status[b.id]||'wait']));
   if (cgSort === 'created')  cards.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
-  // ────────────────────────────────────────────────────────
+
   const chipEl = document.getElementById('cg-active-col-chip');
   if (chipEl) {
     if (selectedColId != null) {
@@ -49,7 +62,7 @@ function renderCards() {
         document.getElementById('cg-chip-dot').style.background = col.color;
         document.getElementById('cg-chip-name').textContent = col.title;
         const clearBtn = document.getElementById('cg-chip-clear');
-        if (clearBtn) clearBtn.onclick = () => { selectedColId = null; queueRender('cards'); queueRender('sidebar'); };
+        if (clearBtn) clearBtn.onclick = () => { setSelectedColId(null); queueRender('cards'); queueRender('sidebar'); };
       } else {
         chipEl.style.display = 'none';
       }
@@ -58,13 +71,11 @@ function renderCards() {
     }
   }
 
-  // 전체 선택 버튼 상태 갱신
   const saBtn = document.getElementById('cg-select-all');
   if (saBtn) {
     const allSelected = cards.length > 0 && cards.every(c => cgSelected.has(c.id));
     saBtn.textContent = allSelected ? '선택 해제' : '전체 선택';
     saBtn.classList.toggle('all-selected', allSelected);
-    // 매번 새로 연결 (클로저가 최신 cards를 참조하도록)
     saBtn.onclick = () => toggleSelectAll('cg', cards);
   }
 
@@ -81,10 +92,9 @@ function renderCards() {
 
   cards.forEach(card => {
     const div = ce('div','cg-card');
-    div.dataset.id = card.id;  // 라쏘 선택 교차 판정용
+    div.dataset.id = card.id;
     if (cgSelected.has(card.id)) div.classList.add('selected');
 
-    // 체크박스
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.className = 'bulk-checkbox';
@@ -95,7 +105,6 @@ function renderCards() {
       else cgSelected.delete(card.id);
       div.classList.toggle('selected', cb.checked);
       updateBulkBar('cg');
-      // 전체선택 버튼 상태 갱신
       const allSel = cards.every(c => cgSelected.has(c.id));
       if (saBtn) {
         saBtn.textContent = allSel ? '선택 해제' : '전체 선택';
@@ -106,7 +115,6 @@ function renderCards() {
 
     const prio = ce('div','cg-card-prio prio-' + (card.priority||'mid'));
     div.appendChild(prio);
-    // 문서뷰 진입 버튼
     const dvB = document.createElement('button');
     dvB.className = 'dv-go-btn';
     dvB.title = '문서뷰로 보기';
@@ -126,18 +134,14 @@ function renderCards() {
     grid.appendChild(div);
   });
 
-  // ── 빠른 카드 생성 버튼 (그리드 마지막) ──────────────
   const addDiv = ce('div', 'cg-add-card');
   addDiv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>새 카드';
   const quickColId = selectedColId ?? (S.columns.length ? S.columns[0].id : null);
   addDiv.onclick = () => openCardModal(null, quickColId);
   grid.appendChild(addDiv);
-  // ────────────────────────────────────────────────────────
-  // 이전에 등록한 리스너를 제거하기 위해 grid에 플래그로 관리
+
   if (!grid._lassoInit) {
     grid._lassoInit = true;
-
-    // mousedown은 뷰 전체 컨테이너에서 감지 — 카드 아래 빈 공간 포함
     const viewEl = document.getElementById('view-cards') || grid;
 
     let isDragging   = false;
@@ -145,28 +149,22 @@ function renderCards() {
     let lassoEl      = null;
     let preSnapshot  = null;
 
-    // 드래그 사각형과 교차하는 카드 갱신
-    // lasso rect는 position:fixed(viewport 기준), card도 getBoundingClientRect()(viewport 기준)
-    // → 스크롤과 무관하게 일관성 유지
     function applyLasso() {
       if (!lassoEl) return;
       const lb = lassoEl.getBoundingClientRect();
       grid.querySelectorAll('.cg-card').forEach(div => {
         const rawId = div.dataset.id;
         if (!rawId) return;
-        // card.id는 number 타입 — dataset은 항상 string이므로 변환
         const cardId = isNaN(rawId) ? rawId : Number(rawId);
-        const cb = div.getBoundingClientRect();
-        // 두 사각형의 AABB 교차 판정
+        const cb2 = div.getBoundingClientRect();
         const hit =
-          lb.right  > cb.left   &&
-          lb.left   < cb.right  &&
-          lb.bottom > cb.top    &&
-          lb.top    < cb.bottom;
+          lb.right  > cb2.left   &&
+          lb.left   < cb2.right  &&
+          lb.bottom > cb2.top    &&
+          lb.top    < cb2.bottom;
         if (hit) {
           cgSelected.add(cardId);
         } else {
-          // 스냅샷에 없던 것만 해제 (체크박스로 이미 선택한 항목 보호)
           if (!preSnapshot.has(cardId)) cgSelected.delete(cardId);
         }
         div.classList.toggle('selected', cgSelected.has(cardId));
@@ -176,7 +174,6 @@ function renderCards() {
       updateBulkBar('cg');
     }
 
-    // lasso rect의 position:fixed 좌표를 clientX/Y로 정확히 계산
     function updateLassoRect(curX, curY) {
       const x = Math.min(curX, dragOrigin.clientX);
       const y = Math.min(curY, dragOrigin.clientY);
@@ -190,10 +187,8 @@ function renderCards() {
       });
     }
 
-    // 뷰 전체에서 mousedown 감지 (카드 아래 빈 공간 포함)
     viewEl.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
-      // 카드·버튼·체크박스·뷰바 위는 기존 동작 유지
       if (e.target.closest('.cg-card')) return;
       if (e.target.closest('.view-bar')) return;
       if (e.target.closest('.bulk-actions-bar')) return;
@@ -221,13 +216,12 @@ function renderCards() {
       applyLasso();
     }
 
-    function onMouseUp(e) {
+    function onMouseUp() {
       if (!isDragging) return;
       isDragging  = false;
       preSnapshot = null;
       if (lassoEl) { lassoEl.remove(); lassoEl = null; }
       document.body.classList.remove('cg-dragging');
-      // 전체선택 버튼 상태 최종 동기화
       const saBtn2 = document.getElementById('cg-select-all');
       if (saBtn2) {
         const visCards = grid.querySelectorAll('.cg-card');
@@ -241,16 +235,12 @@ function renderCards() {
       }
     }
 
-    // document 레벨로 등록 (그리드 바깥으로 나가도 추적)
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup',   onMouseUp);
   }
-  // ────────────────────────────────────────────────────────
 
-  // 액션바 초기화 (최초 1회만)
   initBulkBar('cg');
   updateBulkBar('cg');
 }
 
-// Phase 1: store에 등록
 subscribe('cards', renderCards);

@@ -1,14 +1,14 @@
 // src/actions/settings-actions.js
 // ── 설정 & 메타 액션 + reducer ────────────────────────
 
-// ── Action Types ──────────────────────────────────────
-const SETTINGS_UPDATE = 'SETTINGS_UPDATE';
-const THEME_SET       = 'THEME_SET';
-const META_UPDATE     = 'META_UPDATE';
+import { devLog } from '../core/dev.js';
+import { registerReducer } from '../core/action.js';
 
-// ── Action Creators ───────────────────────────────────
+export const SETTINGS_UPDATE = 'SETTINGS_UPDATE';
+export const THEME_SET       = 'THEME_SET';
+export const META_UPDATE     = 'META_UPDATE';
 
-function updateSettings(patch) {
+export function updateSettings(patch) {
   return {
     type: SETTINGS_UPDATE,
     payload: { patch },
@@ -16,7 +16,7 @@ function updateSettings(patch) {
   };
 }
 
-function setTheme(theme) {
+export function setTheme(theme) {
   return {
     type: THEME_SET,
     payload: { theme },
@@ -24,8 +24,7 @@ function setTheme(theme) {
   };
 }
 
-// S.meta.title / S.meta.version 업데이트 (about 뷰에서 사용)
-function updateMeta(patch) {
+export function updateMeta(patch) {
   return {
     type: META_UPDATE,
     payload: { patch },
@@ -33,7 +32,6 @@ function updateMeta(patch) {
   };
 }
 
-// ── Reducer ───────────────────────────────────────────
 function settingsReducer(state, action) {
   switch (action.type) {
 

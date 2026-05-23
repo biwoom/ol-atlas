@@ -62,7 +62,7 @@ const CSS_FILES = [
   'styles/listview.css',
   'styles/docview.css',
   'styles/modal.css',
-  'components/shared/confirm-modal.css',   // Phase 7.x: 커스텀 모달
+  'ui/confirm-modal.css',                  // Phase 7.x: 커스텀 모달
   'components/shared/dirty-indicator.css', // Phase 7.x: dirty 인디케이터
 ];
 
@@ -111,7 +111,7 @@ export async function inline({ isDev = false } = {}) {
     .replace('<!--BUILD_INFO-->',  r(buildInfoScript))
     .replace('<!--STYLES-->',      r(`<style>\n${cssContent}\n</style>`))
     .replace('<!--DATA_VAR-->',    r(dataVarScript))
-    .replace('<!--SCRIPTS-->',     r(`<script>\n${bundleJs}\n</script>`));
+    .replace('<!--SCRIPTS-->',     r(`<script>\n/*! AUTHOR_BUNDLE_START */\n${bundleJs}\n/*! AUTHOR_BUNDLE_END */\n</script>`));
 
   const outPath = join(DIST, 'ol-atlas.html');
   writeFileSync(outPath, html, 'utf8');
