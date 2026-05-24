@@ -113,7 +113,7 @@ export async function inline({ isDev = false } = {}) {
     .replace('<!--BUILD_INFO-->',  r(buildInfoScript))
     .replace('<!--STYLES-->',      r(`<style>\n${cssContent}\n</style>`))
     .replace('<!--DATA_VAR-->',    r(dataVarScript))
-    .replace('<!--SCRIPTS-->',     r(`<script>\n/*! AUTHOR_BUNDLE_START */\n${bundleJs}\n/*! AUTHOR_BUNDLE_END */\n</script>`));
+  .replace('<!--SCRIPTS-->',     r(`<script>\n${bundleJs}\n</script>`));
 
   const outPath = join(DIST, 'ol-atlas.html');
   writeFileSync(outPath, html, 'utf8');
