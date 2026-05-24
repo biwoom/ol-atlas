@@ -2,7 +2,7 @@
 // ── 상태 정규화 ──────────────────────────────────────
 
 import { today, ce } from './utils.js';
-import { makeDefault } from './state.js';
+import { makeDefault, makeDefaultBookManifest } from './state.js';
 import { bodyImagesToTokens, titleToSlug } from './constants.js';
 
 const VALID_PRIORITIES = ['high', 'mid', 'low'];
@@ -48,6 +48,10 @@ export function normalizeState(s) {
 
   if (!s.userData || typeof s.userData !== 'object') s.userData = { status: {} };
   if (!s.userData.status || typeof s.userData.status !== 'object') s.userData.status = {};
+  if (!s.book || typeof s.book !== 'object') s.book = {};
+  if (!s.book.manifest || typeof s.book.manifest !== 'object') {
+    s.book.manifest = makeDefaultBookManifest(s.meta.title || '');
+  }
 
   const maxColId = s.columns.reduce((m, c) => {
     const n = typeof c.id === 'number' ? c.id : parseInt(c.id, 10);

@@ -60,6 +60,8 @@ function _switchViewCore(v) {
   if (v === 'document') queueRender('docview');
   if (v === 'home')     queueRender('home');
   if (v === 'trash')    queueRender('trash');
+  if (v === 'cover-editor') queueRender('cover-editor');
+  if (v === 'cover-page')   queueRender('cover-page');
 
   if (v !== 'home') {
     try { localStorage.setItem('ol_last_view', v); } catch(_) {}
@@ -124,7 +126,7 @@ export function routeFromHash() {
   try {
     if (!hash || hash === 'home') {
       switchView('home');
-    } else if (['kanban', 'cards', 'list', 'about', 'trash'].includes(hash)) {
+    } else if (['kanban', 'cards', 'list', 'about', 'trash', 'cover-editor', 'cover-page'].includes(hash)) {
       switchView(hash);
     } else if (hash.startsWith('document/')) {
       const slug = hash.slice('document/'.length);

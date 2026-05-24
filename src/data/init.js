@@ -65,7 +65,7 @@ export function boot() {
   let startView = 'kanban';
   try {
     const last = localStorage.getItem('ol_last_view');
-    if (last && ['kanban','cards','list','document','about'].includes(last)) {
+    if (last && ['kanban','cards','list','document','about','cover-editor','cover-page'].includes(last)) {
       startView = last;
     }
   } catch(_) {}

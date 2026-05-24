@@ -8,6 +8,8 @@ import './components/author/listview.js';
 import './components/shared/sidebar.js';
 import './components/shared/docview.js';
 import './components/author/home.js';
+import './components/reader/cover-page.js';
+import './components/author/cover-editor.js';
 import './components/shared/about.js';
 import './components/shared/dirty-indicator.js';
 

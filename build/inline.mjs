@@ -38,7 +38,7 @@ const DIST = join(ROOT, 'dist');
 // ── 빌드 메타정보 ─────────────────────────────────────
 const BUILD_META = {
   version:       '0.7.0',
-  schemaVersion: 6,
+  schemaVersion: 8,
   buildAt:       new Date().toISOString(),
 };
 
@@ -62,6 +62,8 @@ const CSS_FILES = [
   'styles/listview.css',
   'styles/docview.css',
   'styles/modal.css',
+  'styles/cover-page.css',
+  'styles/cover-editor.css',
   'ui/confirm-modal.css',                  // Phase 7.x: 커스텀 모달
   'components/shared/dirty-indicator.css', // Phase 7.x: dirty 인디케이터
 ];

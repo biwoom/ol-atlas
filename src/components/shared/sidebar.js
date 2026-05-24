@@ -15,6 +15,7 @@ import { subscribe }                from '../../core/store.js';
 import { SB_ICONS, buildAboutTrashSection } from './about.js';
 import { highlightText }            from '../../data/search/search.js';
 import { goToDocCard }              from './docview.js';
+import { openCoverEditor }          from '../author/cover-editor.js';
 
 function renderSidebar() {
   const el = document.getElementById('sb-inner');
@@ -218,6 +219,9 @@ function renderSidebar() {
   }
 
   el.appendChild(ce('div','sb-divider'));
+  buildCoverEditorSection(el);
+
+  el.appendChild(ce('div','sb-divider'));
   buildAboutTrashSection(el);
 
   el.appendChild(ce('div','sb-divider'));
@@ -404,6 +408,9 @@ function renderSidebarForDocView(rootEl) {
   rootEl.appendChild(sec);
 
   rootEl.appendChild(ce('div','sb-divider'));
+  buildCoverEditorSection(rootEl);
+
+  rootEl.appendChild(ce('div','sb-divider'));
   buildAboutTrashSection(rootEl);
 
   rootEl.appendChild(ce('div','sb-divider'));
@@ -428,6 +435,26 @@ function buildDocTreeCard(card) {
     goToDocCard(card.id);
   };
   return item;
+}
+
+function buildCoverEditorSection(rootEl) {
+  const sec = ce('div', 'sb-section');
+  const item = ce('div', 'sb-item' + (currentView === 'cover-editor' ? ' active' : ''));
+  item.innerHTML = `
+    <span class="sb-item-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <path d="M14 2v6h6"></path>
+        <path d="M16 13H8"></path>
+        <path d="M16 17H8"></path>
+      </svg>
+    </span>
+    <span>표지 편집</span>`;
+  item.onclick = () => {
+    openCoverEditor();
+  };
+  sec.appendChild(item);
+  rootEl.appendChild(sec);
 }
 
 subscribe('sidebar', renderSidebar);
