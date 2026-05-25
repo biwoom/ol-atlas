@@ -259,14 +259,38 @@ function cardReducer(state, action) {
 
     case CARD_PURGE: {
       const { id } = action.payload;
+      const target = (state.trash || []).find(c => c.id === id);
+      const archivedAt = new Date().toISOString();
+      const newActLogEntries = (target?.acts || []).map(act => ({
+        ...act,
+        cardId: target.id,
+        cardTitle: target.title || '(제목 없음)',
+        archivedAt,
+      }));
+      const actLog = [...(state.meta.actLog || []), ...newActLogEntries].slice(-1000);
       return {
         ...state,
+        meta: { ...state.meta, actLog },
         trash: (state.trash || []).filter(c => c.id !== id),
       };
     }
 
     case CARD_PURGE_ALL: {
-      return { ...state, trash: [] };
+      const archivedAt = new Date().toISOString();
+      const newActLogEntries = (state.trash || []).flatMap(card =>
+        (card.acts || []).map(act => ({
+          ...act,
+          cardId: card.id,
+          cardTitle: card.title || '(제목 없음)',
+          archivedAt,
+        }))
+      );
+      const actLog = [...(state.meta.actLog || []), ...newActLogEntries].slice(-1000);
+      return {
+        ...state,
+        meta: { ...state.meta, actLog },
+        trash: [],
+      };
     }
 
     case STATUS_SET: {

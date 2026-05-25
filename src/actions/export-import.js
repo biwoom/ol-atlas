@@ -1,7 +1,7 @@
 // src/actions/export-import.js
 // ── 내보내기 / 가져오기 ───────────────────────────────
 
-import { applyState }                  from '../core/store.js';
+import { applyState, getState }         from '../core/store.js';
 import { S }                           from '../core/state.js';
 import { dispatch }                    from '../core/action.js';
 import { normalizeState }              from '../core/normalize.js';
@@ -13,6 +13,8 @@ import { queueRender }                 from '../core/render-queue.js';
 import { save }                        from '../core/storage.js';
 import { importMerge, VALID_PRIORITIES } from './card-actions.js';
 import { __STATIC_HTML__ }              from '../core/static-html.js';
+import { getCurrentEditor, getActiveEditor, showEditorModal } from '../ui/editor-modal.js';
+import { updateEditors }               from './settings-actions.js';
 
 // ── 벌크 선택 핸들러 등록 (cross-layer 의존 방지) ────
 let _getBulkHandlers = null;
@@ -211,11 +213,38 @@ export function exportCardsAsIndividualMd(cards) {
 }
 
 // ── 1. OL 파일로 저장 (.html) ────────────────────────
-document.getElementById('export-btn').addEventListener('click', () => {
-  closeAllDropdowns();
+function executeSave(editor) {
+  const now = new Date().toISOString();
+
+  // saveLog 에 항목 추가 (최대 200개)
+  const saveLog = [
+    ...(S.meta.saveLog || []),
+    { at: now, editorId: editor.id },
+  ].slice(-200);
+
+  // editors 배열 upsert
+  const existing = (S.meta.editors || []).find(e => e.id === editor.id);
+  let editors;
+  if (existing) {
+    editors = (S.meta.editors || []).map(e =>
+      e.id === editor.id
+        ? { ...e, name: editor.name, email: editor.email,
+            lastSavedAt: now, saveCount: (e.saveCount || 0) + 1 }
+        : e
+    );
+  } else {
+    editors = [
+      ...(S.meta.editors || []),
+      { id: editor.id, name: editor.name, email: editor.email,
+        firstSavedAt: now, lastSavedAt: now, saveCount: 1 },
+    ];
+  }
+
+  dispatch(updateEditors({ editors, saveLog, currentEditorId: editor.id }));
   save();
-  const json = JSON.stringify(S, null, 2);
+
   try {
+    const json = JSON.stringify(getState(), null, 2);
     const html = buildExportHTML(json);
     dlBlob(new Blob([html], { type: 'text/html; charset=utf-8' }),
            safeFname() + '_v' + S.meta.version + '.html');
@@ -224,6 +253,16 @@ document.getElementById('export-btn').addEventListener('click', () => {
   } catch(err) {
     toast('저장 실패: ' + err.message);
     console.error('export error:', err);
+  }
+}
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  closeAllDropdowns();
+  const editor = getActiveEditor(S) || getCurrentEditor();
+  if (editor) {
+    executeSave(editor);
+  } else {
+    showEditorModal(S, executeSave);
   }
 });
 

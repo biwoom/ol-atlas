@@ -184,6 +184,242 @@
   .about-origin-body { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── About 탭 ──────────────────────────────────────── */
+.about-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid hsl(var(--border));
+  margin-bottom: 1.25rem;
+}
+.about-tab {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.about-tab:hover { color: hsl(var(--foreground)); }
+.about-tab.active {
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--primary));
+}
+
+/* ── About 히스토리 탭 ─────────────────────────────── */
+.about-history-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.about-history-empty {
+  padding: 1rem;
+  font-size: 0.8125rem;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+}
+.about-history-more {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  border-top: 1px solid hsl(var(--border));
+}
+.about-editor-row {
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.about-editor-row:last-child { border-bottom: none; }
+.about-editor-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+.about-editor-email {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+.about-editor-meta {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+.about-log-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.8125rem;
+}
+.about-log-row:last-child { border-bottom: none; }
+.about-log-time {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.about-log-editor {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+/* ── About 히스토리 2컬럼 레이아웃 ─────────────────── */
+.about-wrap.wide { max-width: 56rem; }
+
+.about-history-layout {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 20rem;
+}
+
+.about-editor-list {
+  border-right: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.3);
+  overflow-y: auto;
+}
+
+.about-editor-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  border-bottom: 1px solid hsl(var(--border));
+  transition: background 0.12s, color 0.12s;
+  user-select: none;
+}
+.about-editor-item:last-child { border-bottom: none; }
+.about-editor-item:hover { background: hsl(var(--accent)); color: hsl(var(--foreground)); }
+.about-editor-item.active {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.about-editor-item-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  flex-shrink: 0;
+  opacity: 0;
+}
+.about-editor-item.active .about-editor-item-dot { opacity: 1; }
+
+.about-editor-item-origin-badge {
+  font-size: 0.6rem;
+  color: hsl(var(--muted-foreground));
+  font-weight: 400;
+}
+
+.about-editor-detail {
+  overflow-y: auto;
+  background: hsl(var(--background));
+}
+
+.about-detail-header {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.about-detail-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.15rem;
+}
+
+.about-detail-meta {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.about-detail-section {
+  padding: 0.5rem 1rem 0;
+}
+
+.about-detail-section-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  padding: 0.5rem 0 0.25rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+  margin-bottom: 0.25rem;
+}
+
+.about-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
+}
+.about-detail-row:last-child { border-bottom: none; }
+
+.about-detail-time {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.72rem;
+  flex-shrink: 0;
+  min-width: 7.5rem;
+}
+
+.about-detail-content {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+.about-act-badge {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.about-act-badge.create { background: hsl(142 71% 92%); color: hsl(142 50% 28%); }
+.about-act-badge.update { background: hsl(217 91% 92%); color: hsl(217 60% 35%); }
+.about-act-badge.delete { background: hsl(0 84% 93%);   color: hsl(0 65% 38%); }
+.dark .about-act-badge.create { background: hsl(142 40% 18%); color: hsl(142 60% 72%); }
+.dark .about-act-badge.update { background: hsl(217 50% 20%); color: hsl(217 80% 75%); }
+.dark .about-act-badge.delete { background: hsl(0 45% 20%);   color: hsl(0 75% 75%); }
+.about-act-badge.restore { background: hsl(262 83% 93%); color: hsl(262 60% 38%); }
+.dark .about-act-badge.restore { background: hsl(262 40% 20%); color: hsl(262 70% 75%); }
+
+@media (max-width: 600px) {
+  .about-history-layout {
+    grid-template-columns: 1fr;
+  }
+  .about-editor-list {
+    border-right: none;
+    border-bottom: 1px solid hsl(var(--border));
+    max-height: 8rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: row;
+  }
+  .about-editor-item {
+    flex-shrink: 0;
+    border-bottom: none;
+    border-right: 1px solid hsl(var(--border));
+  }
+}
+
 /* ══════════════════════════════════════════
    DIALOG / MODAL (shadcn Dialog)
    z-index 정책: 헤더(50) < 사이드바(30/모바일51) < 모달(200) < 토스트(300)

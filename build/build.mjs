@@ -37,6 +37,7 @@ async function main() {
     target:      'es2018',
     legalComments: 'inline',
     metafile:    true,
+    loader:      { '.css': 'empty' }, // CSS는 inline.mjs가 직접 읽어 처리
   });
 
   if (result.errors.length > 0) {

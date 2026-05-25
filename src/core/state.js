@@ -5,68 +5,34 @@ import { devLog } from './dev.js';
 import { getState, storeInit } from './store.js';
 import { today } from './utils.js';
 
-const DEFAULT_ORIGIN = {
-  author: '비움',
-  site: 'olbit.org',
-  copyright: 'Copyright © 2026 biwoom',
-  license: 'CC BY-SA 4.0',
-};
-
-export function generateBookIdFromTitle(title, date = today()) {
-  const site = DEFAULT_ORIGIN.site || 'olbit.org';
-  const slug = String(title || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40) || 'untitled';
-  return site + '/' + slug + '/' + String(date).replace(/-/g, '');
-}
-
-export function makeDefaultBookManifest(title) {
-  const publishedAt = today();
-  const bookTitle = String(title || '').trim() || 'OL Weaving the Wisdom';
-  return {
-    id: generateBookIdFromTitle(bookTitle, publishedAt),
-    title: bookTitle,
-    subtitle: '',
-    author: DEFAULT_ORIGIN.author,
-    series: '',
-    version: '1.0',
-    publishedAt,
-    cover: {
-      image: null,
-      backgroundColor: 'auto',
-    },
-    entry: {
-      view: 'cover',
-      actions: ['start', 'toc'],
-      startTarget: 'first-card',
-    },
-    ordering: {
-      cards: 'array-index',
-    },
-    display: {
-      showColumns: true,
-      showTags: true,
-      showProgress: true,
-      showBookmarks: true,
-    },
-    license: DEFAULT_ORIGIN.license,
-    copyright: DEFAULT_ORIGIN.copyright,
-  };
-}
-
 export function makeDefault() {
-  const fileTitle = 'OL Weaving the Wisdom';
+  const now = today();
+  const originEditorId = 'origin_biwoom';
   return {
     meta: {
-        fileId:        'ol-' + Math.random().toString(36).slice(2, 10),
-        title:         fileTitle,
-        created:       today(),
-        version:       '1.0.0',
-        schemaVersion: 8,
-        dirty:         false,
-        lastSavedAt:   null,
+      fileId:        'ol-' + Math.random().toString(36).slice(2, 10),
+      title:         'OL Weaving the Wisdom',
+      created:       now,
+      version:         '0.0.1',
+      schemaVersion:   9,
+      dirty:           false,
+      lastSavedAt:     null,
+      editors: [
+        {
+          id:           originEditorId,
+          name:         '비움',
+          email:        '',
+          firstSavedAt: now,
+          lastSavedAt:  now,
+          saveCount:    0,
+          isOrigin:     true,
+        },
+      ],
+      saveLog: [
+        { at: now, editorId: originEditorId, note: '원본 생성' },
+      ],
+      actLog:          [],
+      currentEditorId: null,
     },
     settings: {
       theme:        (function(){ try { return localStorage.getItem('ol_theme') || 'system'; } catch(_){ return 'system'; } })(),
@@ -132,9 +98,6 @@ export function makeDefault() {
         created: today(),
       },
     ],
-    book: {
-      manifest: makeDefaultBookManifest(fileTitle),
-    },
     userData: { status: {} },
     nextColId:  4,
     nextCardId: 2,

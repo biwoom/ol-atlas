@@ -2,48 +2,8 @@
 // ── schemaVersion 마이그레이션 ───────────────────────────
 
 import { devLog, devAssert } from './dev.js';
-import { ORIGIN } from './constants.js';
-import { generateBookIdFromTitle } from './state.js';
 
-const SCHEMA_CURRENT_VERSION = 8;
-
-function _generateBookId(s) {
-  const title = (s && s.meta && s.meta.title) ? s.meta.title : '';
-  return generateBookIdFromTitle(title);
-}
-
-function _makeBookManifest(s) {
-  const publishedAt = new Date().toISOString().slice(0, 10);
-  return {
-    id: _generateBookId(s),
-    title: (s.meta && s.meta.title) || '',
-    subtitle: '',
-    author: ORIGIN.author,
-    series: '',
-    version: '1.0',
-    publishedAt,
-    cover: {
-      image: null,
-      backgroundColor: 'auto',
-    },
-    entry: {
-      view: 'cover',
-      actions: ['start', 'toc'],
-      startTarget: 'first-card',
-    },
-    ordering: {
-      cards: 'array-index',
-    },
-    display: {
-      showColumns: true,
-      showTags: true,
-      showProgress: true,
-      showBookmarks: true,
-    },
-    license: ORIGIN.license,
-    copyright: ORIGIN.copyright,
-  };
-}
+const SCHEMA_CURRENT_VERSION = 9;
 
 const _schemaMigrators = {
   6: function(s) {
@@ -63,19 +23,28 @@ const _schemaMigrators = {
     };
     return s;
   },
+
   7: function(s) {
     devLog('MIGRATE', 'v7 → v8');
-    try {
-      localStorage.setItem('ol_backup_v7', JSON.stringify(s));
-      devLog('MIGRATE', 'v7 backup saved to localStorage');
-    } catch(e) {
-      devLog('MIGRATE', 'v7 backup FAILED: ' + e.message);
-    }
     if (!s.meta) s.meta = {};
     s.meta.schemaVersion = 8;
-    if (!s.book || typeof s.book !== 'object') s.book = {};
-    s.book.manifest = _makeBookManifest(s);
-    devLog('MIGRATE', 'migrated v7 → v8, book.manifest created');
+
+    if (!Array.isArray(s.meta.editors))   s.meta.editors  = [];
+    if (!Array.isArray(s.meta.saveLog))   s.meta.saveLog  = [];
+    if (s.meta.currentEditorId === undefined) s.meta.currentEditorId = null;
+
+    (s.cards || []).forEach(card => {
+      if (!Array.isArray(card.acts)) card.acts = [];
+    });
+
+    return s;
+  },
+
+  8: function(s) {
+    devLog('MIGRATE', 'v8 → v9');
+    if (!s.meta) s.meta = {};
+    s.meta.schemaVersion = 9;
+    if (!Array.isArray(s.meta.actLog)) s.meta.actLog = [];
     return s;
   },
 };

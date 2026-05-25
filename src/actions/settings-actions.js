@@ -4,10 +4,10 @@
 import { devLog } from '../core/dev.js';
 import { registerReducer } from '../core/action.js';
 
-export const SETTINGS_UPDATE = 'SETTINGS_UPDATE';
-export const THEME_SET       = 'THEME_SET';
-export const META_UPDATE     = 'META_UPDATE';
-export const MANIFEST_UPDATE  = 'MANIFEST_UPDATE';
+export const SETTINGS_UPDATE      = 'SETTINGS_UPDATE';
+export const THEME_SET            = 'THEME_SET';
+export const META_UPDATE          = 'META_UPDATE';
+export const META_UPDATE_EDITORS  = 'META_UPDATE_EDITORS';
 
 export function updateSettings(patch) {
   return {
@@ -33,11 +33,11 @@ export function updateMeta(patch) {
   };
 }
 
-export function updateManifest(patch) {
+export function updateEditors({ editors, saveLog, currentEditorId }) {
   return {
-    type: MANIFEST_UPDATE,
-    payload: { patch },
-    meta: { affects: ['cover-page'] },
+    type: META_UPDATE_EDITORS,
+    payload: { editors, saveLog, currentEditorId },
+    meta: { affects: ['sidebar', 'about'] },
   };
 }
 
@@ -68,14 +68,11 @@ function settingsReducer(state, action) {
       };
     }
 
-    case MANIFEST_UPDATE: {
-      const { patch } = action.payload;
-      const currentManifest = (state.book && state.book.manifest) || {};
+    case META_UPDATE_EDITORS: {
+      const { editors, saveLog, currentEditorId } = action.payload;
       return {
         ...state,
-        book: Object.assign({}, state.book, {
-          manifest: Object.assign({}, currentManifest, patch),
-        }),
+        meta: Object.assign({}, state.meta, { editors, saveLog, currentEditorId }),
       };
     }
 

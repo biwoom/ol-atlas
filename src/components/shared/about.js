@@ -140,12 +140,42 @@ export function initTrashHandlers() {
   });
 }
 
+let _aboutTab = 'info';
+let _historyEditorId = null;
+
 function renderAbout() {
   const wrap = document.getElementById('about-inner');
   wrap.innerHTML = '';
 
+  const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // ── 탭 헤더 ──────────────────────────────────────────
+  const tabBar = ce('div', 'about-tabs');
+  tabBar.innerHTML = `
+    <button class="about-tab${_aboutTab === 'info' ? ' active' : ''}" data-tab="info">파일 정보</button>
+    <button class="about-tab${_aboutTab === 'history' ? ' active' : ''}" data-tab="history">편집 기록</button>
+  `;
+  tabBar.addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]')?.dataset.tab;
+    if (!tab || tab === _aboutTab) return;
+    _aboutTab = tab;
+    queueRender('about');
+  });
+  wrap.appendChild(tabBar);
+
+  const aboutWrap = document.querySelector('.about-wrap');
+  if (_aboutTab === 'info') {
+    if (aboutWrap) aboutWrap.classList.remove('wide');
+    _renderAboutInfo(wrap, esc);
+  } else {
+    _renderAboutHistory(wrap, esc);
+  }
+}
+
+function _renderAboutInfo(wrap, esc) {
   const LOCK_ICO  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
   const ARROW_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+  void ARROW_ICO;
 
   wrap.insertAdjacentHTML('beforeend', `<div class="about-section-label">원저자 정보</div>`);
   const originCard = ce('div', 'about-origin-card');
@@ -164,7 +194,6 @@ function renderAbout() {
   `;
   wrap.appendChild(originCard);
 
-  const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   wrap.insertAdjacentHTML('beforeend', `<div class="about-section-label" style="margin-top:1.5rem">파일 정보</div>`);
   const metaCard = ce('div', 'about-meta-card');
   metaCard.innerHTML = `
@@ -212,6 +241,173 @@ function renderAbout() {
     linksCard.appendChild(a);
   });
   wrap.appendChild(linksCard);
+}
+
+function _renderAboutHistory(wrap, esc) {
+  const editors  = S.meta.editors  || [];
+  const saveLog  = S.meta.saveLog  || [];
+
+  // wide 클래스 토글
+  const aboutWrap = document.querySelector('.about-wrap');
+  if (aboutWrap) aboutWrap.classList.add('wide');
+
+  // editors 정렬: origin 먼저
+  const sortedEditors = [
+    ...editors.filter(e => e.isOrigin),
+    ...editors.filter(e => !e.isOrigin),
+  ];
+  const editorById = new Map(editors.map(e => [e.id, e]));
+
+  // 선택 편집자 결정
+  const validId = sortedEditors.some(e => e.id === _historyEditorId)
+    ? _historyEditorId
+    : (sortedEditors[0]?.id ?? null);
+  _historyEditorId = validId;
+
+  wrap.insertAdjacentHTML('beforeend', `<div class="about-section-label">편집자 기록</div>`);
+
+  if (!sortedEditors.length) {
+    wrap.insertAdjacentHTML('beforeend',
+      '<div class="about-history-card"><div class="about-history-empty">편집 이력이 없습니다.</div></div>'
+    );
+    return;
+  }
+
+  const layout = ce('div', 'about-history-layout');
+
+  // ── 좌측: 편집자 목록 ────────────────────────────────
+  const editorList = ce('div', 'about-editor-list');
+  sortedEditors.forEach(editor => {
+    const acts = _collectActsForEditor(editor.id);
+    const item = ce('div', 'about-editor-item' + (editor.id === validId ? ' active' : ''));
+    item.innerHTML = `
+      <span class="about-editor-item-dot"></span>
+      <span>${esc(editor.name || '비움')}${editor.isOrigin ? ' <span class="about-editor-item-origin-badge">(원본)</span>' : ''}</span>
+      <span style="margin-left:auto;font-size:0.72rem;color:hsl(var(--muted-foreground))">${acts.length}</span>
+    `;
+    item.addEventListener('click', () => {
+      _historyEditorId = editor.id;
+      queueRender('about');
+    });
+    editorList.appendChild(item);
+  });
+  layout.appendChild(editorList);
+
+  // ── 우측: 선택된 편집자 기록 패널 ────────────────────
+  const detail = ce('div', 'about-editor-detail');
+  const selectedEditor = editorById.get(validId) ?? sortedEditors[0] ?? null;
+  if (selectedEditor) _renderEditorDetail(detail, selectedEditor, saveLog, editorById, esc);
+  layout.appendChild(detail);
+
+  wrap.appendChild(layout);
+}
+
+function _renderEditorDetail(detail, editor, saveLog, editorById, esc) {
+  const acts = _collectActsForEditor(editor.id);
+  const editorSaveLog = saveLog.filter(e => e.editorId === editor.id);
+  const typeLabel = { create: '생성', update: '수정', delete: '삭제', restore: '복구' };
+  const fmt = at => at
+    ? new Date(at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
+    : '';
+
+  const firstAt = editorSaveLog[0]?.at || acts[0]?.at || editor.firstSavedAt || null;
+  const lastAt  = editorSaveLog.length
+    ? editorSaveLog[editorSaveLog.length - 1].at
+    : (acts[0]?.at || editor.lastSavedAt || null);
+
+  const header = ce('div', 'about-detail-header');
+  header.innerHTML = `
+    <div class="about-detail-name">
+      ${esc(editor.name || '비움')}
+      ${editor.email ? `<span style="font-weight:400;font-size:0.8rem;color:hsl(var(--muted-foreground))"> &lt;${esc(editor.email)}&gt;</span>` : ''}
+      ${editor.isOrigin ? `<span class="about-editor-item-origin-badge" style="margin-left:0.4rem">(원본)</span>` : ''}
+    </div>
+    <div class="about-detail-meta">
+      카드기록 ${acts.length}건 · 저장 ${editorSaveLog.length}회
+      ${firstAt ? ' · 첫 기록 ' + fmt(firstAt) : ''}
+      ${lastAt && lastAt !== firstAt ? ' · 마지막 ' + fmt(lastAt) : ''}
+    </div>
+  `;
+  detail.appendChild(header);
+
+  // 카드 기록
+  const actSection = ce('div', 'about-detail-section');
+  actSection.innerHTML = '<div class="about-detail-section-label">카드 기록</div>';
+  if (!acts.length) {
+    actSection.insertAdjacentHTML('beforeend',
+      '<div style="padding:0.75rem 0;font-size:0.8125rem;color:hsl(var(--muted-foreground))">카드 기록이 없습니다.</div>'
+    );
+  } else {
+    const sorted = [...acts].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '')).slice(0, 50);
+    sorted.forEach(act => {
+      const row = ce('div', 'about-detail-row');
+      row.innerHTML = `
+        <span class="about-detail-time">${fmt(act.at)}</span>
+        <span class="about-act-badge ${act.type}">${typeLabel[act.type] || act.type}</span>
+        <span class="about-detail-content">${esc(act.cardTitle)}</span>
+      `;
+      actSection.appendChild(row);
+    });
+    if (acts.length > 50) {
+      actSection.insertAdjacentHTML('beforeend',
+        `<div class="about-history-more">… 외 ${acts.length - 50}건</div>`
+      );
+    }
+  }
+  detail.appendChild(actSection);
+
+  // 저장 기록
+  const saveSection = ce('div', 'about-detail-section');
+  saveSection.innerHTML = '<div class="about-detail-section-label">저장 기록</div>';
+  if (!editorSaveLog.length) {
+    saveSection.insertAdjacentHTML('beforeend',
+      '<div style="padding:0.75rem 0;font-size:0.8125rem;color:hsl(var(--muted-foreground))">저장 기록이 없습니다.</div>'
+    );
+  } else {
+    const recent = [...editorSaveLog].reverse().slice(0, 30);
+    recent.forEach(entry => {
+      const row = ce('div', 'about-detail-row');
+      row.innerHTML = `
+        <span class="about-detail-time">${fmt(entry.at)}</span>
+        <span class="about-detail-content">${esc(entry.note || '파일 저장')}</span>
+      `;
+      saveSection.appendChild(row);
+    });
+    if (editorSaveLog.length > 30) {
+      saveSection.insertAdjacentHTML('beforeend',
+        `<div class="about-history-more">… 외 ${editorSaveLog.length - 30}건</div>`
+      );
+    }
+  }
+  detail.appendChild(saveSection);
+}
+
+function _collectActsForEditor(editorId) {
+  const acts = [];
+
+  // 현재 cards + trash의 acts
+  [...(S.cards || []), ...(S.trash || [])].forEach(card => {
+    (card.acts || []).forEach(act => {
+      if (act.editorId === editorId) {
+        acts.push({
+          at: act.at, type: act.type, editorId: act.editorId,
+          cardId: card.id, cardTitle: card.title || '(제목 없음)',
+        });
+      }
+    });
+  });
+
+  // 영구삭제된 카드의 아카이브된 acts
+  (S.meta.actLog || []).forEach(act => {
+    if (act.editorId === editorId) {
+      acts.push({
+        at: act.at, type: act.type, editorId: act.editorId,
+        cardId: act.cardId, cardTitle: act.cardTitle || '(삭제된 카드)',
+      });
+    }
+  });
+
+  return acts;
 }
 
 export function buildAboutTrashSection(el) {

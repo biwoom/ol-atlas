@@ -2,7 +2,7 @@
 // ── 상태 정규화 ──────────────────────────────────────
 
 import { today, ce } from './utils.js';
-import { makeDefault, makeDefaultBookManifest } from './state.js';
+import { makeDefault } from './state.js';
 import { bodyImagesToTokens, titleToSlug } from './constants.js';
 
 const VALID_PRIORITIES = ['high', 'mid', 'low'];
@@ -28,6 +28,8 @@ export function normalizeCard(card) {
     card.slug = titleToSlug(card.title) || String(card.id || 'card');
   }
 
+  if (!Array.isArray(card.acts)) card.acts = [];
+
   return card;
 }
 
@@ -38,7 +40,11 @@ export function normalizeState(s) {
   if (!s.meta.fileId)  s.meta.fileId  = 'ol-' + Math.random().toString(36).slice(2, 10);
   if (!s.meta.title)   s.meta.title   = 'OL Weaving the Wisdom';
   if (!s.meta.created) s.meta.created = today();
-  if (!s.meta.version) s.meta.version = '1.0.0';
+  if (!s.meta.version) s.meta.version = '0.0.1';
+  if (!Array.isArray(s.meta.editors)) s.meta.editors = [];
+  if (!Array.isArray(s.meta.saveLog)) s.meta.saveLog = [];
+  if (!Array.isArray(s.meta.actLog))  s.meta.actLog  = [];
+  if (s.meta.currentEditorId === undefined) s.meta.currentEditorId = null;
 
   if (!Array.isArray(s.columns)) s.columns = [];
   if (!Array.isArray(s.cards)) s.cards = [];
@@ -48,10 +54,6 @@ export function normalizeState(s) {
 
   if (!s.userData || typeof s.userData !== 'object') s.userData = { status: {} };
   if (!s.userData.status || typeof s.userData.status !== 'object') s.userData.status = {};
-  if (!s.book || typeof s.book !== 'object') s.book = {};
-  if (!s.book.manifest || typeof s.book.manifest !== 'object') {
-    s.book.manifest = makeDefaultBookManifest(s.meta.title || '');
-  }
 
   const maxColId = s.columns.reduce((m, c) => {
     const n = typeof c.id === 'number' ? c.id : parseInt(c.id, 10);

@@ -35,10 +35,12 @@ const ROOT = join(__dirname, '..');
 const SRC  = join(ROOT, 'src');
 const DIST = join(ROOT, 'dist');
 
-// ── 빌드 메타정보 ─────────────────────────────────────
+// ── 빌드 메타정보 — 버전은 package.json에서 자동 주입 ─────
+const _pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+const SCHEMA_VERSION = 9;
 const BUILD_META = {
-  version:       '0.7.0',
-  schemaVersion: 8,
+  version:       _pkg.version,
+  schemaVersion: SCHEMA_VERSION,
   buildAt:       new Date().toISOString(),
 };
 
@@ -62,10 +64,9 @@ const CSS_FILES = [
   'styles/listview.css',
   'styles/docview.css',
   'styles/modal.css',
-  'styles/cover-page.css',
-  'styles/cover-editor.css',
   'ui/confirm-modal.css',                  // Phase 7.x: 커스텀 모달
   'components/shared/dirty-indicator.css', // Phase 7.x: dirty 인디케이터
+  'ui/editor-modal.css',                   // v0.0.2: 편집자 입력 모달
 ];
 
 export async function inline({ isDev = false } = {}) {
@@ -113,13 +114,14 @@ export async function inline({ isDev = false } = {}) {
     .replace('<!--BUILD_INFO-->',  r(buildInfoScript))
     .replace('<!--STYLES-->',      r(`<style>\n${cssContent}\n</style>`))
     .replace('<!--DATA_VAR-->',    r(dataVarScript))
-  .replace('<!--SCRIPTS-->',     r(`<script>\n${bundleJs}\n</script>`));
+    .replace('<!--SCRIPTS-->',     r(`<script>\n${bundleJs}\n</script>`));
 
-  const outPath = join(DIST, 'ol-atlas.html');
+  const outFilename = `ol-atlas_v${_pkg.version}.html`;
+  const outPath = join(DIST, outFilename);
   writeFileSync(outPath, html, 'utf8');
 
   const kb = Math.round(html.length / 1024);
-  console.log(`[inline] ol-atlas.html → ${kb} KB`);
+  console.log(`[inline] ${outFilename} → ${kb} KB`);
 }
 
 // 단독 실행 지원

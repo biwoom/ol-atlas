@@ -12,6 +12,7 @@ import { initCustomSelect }         from '../../ui/custom-select.js';
 import { _currentEditingCard, setCurrentEditingCard } from '../../core/tag-filter.js';
 import { updateMarkdownPreview, setCmMode, renderCmImgPanel } from './md-editor.js';
 import { cardToMarkdownText }       from '../../actions/export-import.js';
+import { ensureEditorSession }      from '../../ui/editor-modal.js';
 
 export let editCard   = null;
 export let curPri     = 'mid';
@@ -123,7 +124,7 @@ export function closeCardModal() {
   cardModalPrevFocus = null;
 }
 
-export function saveCard() {
+export async function saveCard() {
   const title = document.getElementById('cm-t').value.trim();
   if (!title) { toast('제목을 입력해주세요'); return; }
   const body   = document.getElementById('cm-b-md').value.trim();
@@ -138,6 +139,8 @@ export function saveCard() {
   if (!slug) slug = titleToSlug(title);
   if (!slug) slug = 'card';
   slug = titleToSlug(slug) || 'card';
+
+  if (!(await ensureEditorSession(S))) return;
 
   if (editCard) {
     const savedCardId = editCard.id;

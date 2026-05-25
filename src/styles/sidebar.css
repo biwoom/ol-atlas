@@ -773,3 +773,23 @@
   flex: 1; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ── 태그 전체 해제 버튼 (prefix 섹션) ─────────────── */
+.sb-tag-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  color: hsl(var(--muted-foreground));
+  background: none;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm, 4px);
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+  margin-top: 0.25rem;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+.sb-tag-clear-btn:hover {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--foreground));
+}
