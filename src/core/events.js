@@ -6,7 +6,7 @@ import { escapeHTML }               from './utils.js';
 import { cardSearchText, cardPreviewText } from './body-helpers.js';
 import { switchView, currentView, currentDocCardId, getPrevNextCard, registerPostSwitchHook } from './router.js';
 import { queueRender }              from './render-queue.js';
-import { applyTheme }               from './theme.js';
+import { toggleTheme }              from './theme.js';
 import { initAllCustomSelects }     from '../ui/custom-select.js';
 import { openCardModal, closeCardModal, saveCard, editCard, setCurPri, setCurStatus, updatePriBtns, updateStatusBtns, openCardDeleteDialog } from '../components/author/card-modal.js';
 import { openDocCard, isDvEditing, isDvEditDirty, startInlineEdit, saveInlineEdit, cancelInlineEdit, goToDocCard } from '../components/shared/docview.js';
@@ -467,12 +467,7 @@ document.addEventListener('keydown', e => {
 
   // ── 사이드바 모바일 패널 버튼 연결 ───────────────────
   const sbMpTheme = document.getElementById('sb-mp-theme');
-  sbMpTheme && sbMpTheme.addEventListener('click', function() {
-    const isDark = document.documentElement.classList.contains('dark');
-    applyTheme(isDark ? 'light' : 'dark');
-    const label = document.getElementById('sb-mp-theme-label');
-    if (label) label.textContent = isDark ? '다크 모드' : '라이트 모드';
-  });
+  sbMpTheme && sbMpTheme.addEventListener('click', toggleTheme);
 
   // ── 모바일 저장 드롭다운 ─────────────────────────────
   ['sb-save-dropdown', 'sb-open-dropdown'].forEach(id => {
@@ -505,11 +500,4 @@ document.addEventListener('keydown', e => {
   const sbMpImportMd = document.getElementById('sb-mp-import-md');
   sbMpImportMd && sbMpImportMd.addEventListener('click', () => { closeSidebar(); closeAllDropdowns(); document.getElementById('import-md-btn').click(); });
 
-  (function syncThemeLabel() {
-    const label = document.getElementById('sb-mp-theme-label');
-    if (label) {
-      label.textContent = document.documentElement.classList.contains('dark')
-        ? '라이트 모드' : '다크 모드';
-    }
-  })();
 })();

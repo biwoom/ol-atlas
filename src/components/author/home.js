@@ -1,76 +1,139 @@
 // src/components/home.js
 // ── Home (Landing Page) ───────────────────────────────
 
-import { S }                    from '../../core/state.js';
-import { ce, escapeHTML }       from '../../core/utils.js';
+import { S } from '../../core/state.js';
+import { ce, escapeHTML, sanitizeURL } from '../../core/utils.js';
 import { ORIGIN, ICONS_X, OL_PROJECTS } from '../../core/constants.js';
-import { switchView }           from '../../core/router.js';
-import { subscribe }            from '../../core/store.js';
+import { switchView } from '../../core/router.js';
+import { subscribe } from '../../core/store.js';
+import { toggleTheme } from '../../core/theme.js';
+
+const HOME_ICONS = {
+  bookOpen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="M5 5.5A3.5 3.5 0 0 1 8.5 9H12"></path><path d="M12 9h3.5A3.5 3.5 0 0 1 19 5.5"></path><path d="M5 18.5A3.5 3.5 0 0 1 8.5 15H12"></path><path d="M12 15h3.5A3.5 3.5 0 0 0 19 18.5"></path></svg>',
+  cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="18" x="3" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="16" rx="1"></rect></svg>',
+  fileText: ICONS_X.fileText,
+  search: ICONS_X.search,
+  export: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>',
+  arrow: ICONS_X.chevronRight,
+};
+
+function makeBadge(label, value) {
+  if (!value) return '';
+  return `<span class="home-meta-pill"><span>${escapeHTML(label)}</span><strong>${escapeHTML(value)}</strong></span>`;
+}
+
+function makeFeatureCard(icon, title, desc) {
+  return `
+    <article class="home-feature-card">
+      <div class="home-feature-icon">${icon}</div>
+      <div class="home-feature-title">${escapeHTML(title)}</div>
+      <div class="home-feature-desc">${escapeHTML(desc)}</div>
+    </article>`;
+}
+
+function makeProjectCard(project) {
+  const href = project.url ? sanitizeURL(project.url) : '#';
+  return `
+    <a class="home-project-card" href="${escapeHTML(href)}" ${href !== '#' ? 'target="_blank" rel="noopener"' : ''}>
+      <div class="home-project-top">
+        <span class="home-project-tag">${escapeHTML(project.tag || 'OL BOOK')}</span>
+        <span class="home-project-arrow">${HOME_ICONS.arrow}</span>
+      </div>
+      <div class="home-project-title">${escapeHTML(project.name || '')}</div>
+      <div class="home-project-desc">${escapeHTML(project.desc || '')}</div>
+    </a>`;
+}
 
 function renderHome() {
   const wrap = document.getElementById('home-inner');
+  if (!wrap) return;
+
+  const meta = S.meta || {};
+  const bi = meta.bookInfo || {};
+  const bookTitle = bi.bookTitle || meta.title || 'OL ATLAS';
+  const subtitle = bi.subtitle || '한 파일에 담는 불교 콘텐츠 제작 도구 ';
+  const description = bi.description || 'ATLAS는 단일 HTML 파일로 동작하는 불교 콘텐츠 에디터 & 뷰어.';
+  const authorLine = [bi.author, bi.translator ? `역 ${bi.translator}` : ''].filter(Boolean).join(' · ');
+  const publishLine = [bi.publisher, bi.publishedAt ? `초판 ${bi.publishedAt}` : '', bi.revisedAt ? `개정 ${bi.revisedAt}` : ''].filter(Boolean).join(' · ');
+  const versionLine = [bi.bookVersion ? `책 버전 ${bi.bookVersion}` : '', meta.version ? `앱 ${meta.version}` : ''].filter(Boolean).join(' · ');
+  const coverColor = bi.coverColor || 'hsl(40 35% 90%)';
+
   wrap.innerHTML = '';
+  const page = ce('div', 'home-page');
 
-  const hero = ce('section','home-hero');
+  const topbar = ce('header', 'home-topbar');
+  topbar.innerHTML = `
+    <div class="home-topbar-inner">
+      <div class="home-brand" role="button" tabindex="0" aria-label="홈으로">
+        <div class="h-brand-mark">
+          <em>OL</em>
+          <span class="h-brand-mark-info"></span>
+        </div>
+      </div>
+      <nav class="home-nav" aria-label="홈 메뉴">
+        <button class="home-nav-btn" id="home-doc-btn">독서</button>
+        <button class="home-nav-btn" id="home-start-btn">편집</button>
+        <button class="home-nav-btn" id="home-about-btn">About</button>
+      </nav>
+      <div class="home-actions">
+        <button class="theme-toggle" id="home-theme-toggle" title="라이트/다크/독서 모드 전환" aria-label="테마 전환">
+          <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+          <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+          <svg class="icon icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        </button>
+      </div>
+    </div>`;
+  page.appendChild(topbar);
+
+  const hero = ce('section', 'home-hero');
+  hero.id = 'home-hero';
+  hero.style.setProperty('--home-cover', coverColor);
   hero.innerHTML = `
-    <div class="home-hero-eyebrow">${escapeHTML(ORIGIN.tool)}</div>
-    <h1 class="home-hero-title">단일 HTML 파일로 작동하는<br>지식 정리 도구</h1>
-    <p class="home-hero-sub">"지혜의 올을 엮다(Weaving the Wisdom)!!"</p>
-    <p class="home-hero-sub">다운로드만 하면 어디서든 사용할 수 있습니다. 카드로 정리하고, 마크다운으로 작성하고, 파일 하나로 공유합니다.</p>
-    <div class="home-hero-actions">
-      <button class="btn pri" id="home-hero-start">칸반 보드로 시작</button>
-      <button class="btn" id="home-hero-doc">문서뷰로 보기</button>
-    </div>
-  `;
-  wrap.appendChild(hero);
+    <div class="home-hero-copy">
+      <div class="home-hero-eyebrow">${escapeHTML(ORIGIN.tool)}</div>
+      <h1 class="home-hero-title">${escapeHTML(bookTitle)}</h1>
+      <div class="home-hero-subtitle">${escapeHTML(subtitle)}</div>
+      <p class="home-hero-desc">${escapeHTML(description)}</p>
+      ${authorLine ? `<div class="home-meta-line">${escapeHTML(authorLine)}</div>` : ''}
+      ${publishLine ? `<div class="home-meta-line">${escapeHTML(publishLine)}</div>` : ''}
+      ${versionLine ? `<div class="home-meta-line">${escapeHTML(versionLine)}</div>` : ''}
+      <div class="home-hero-actions">
+        <button class="btn pri" id="home-hero-start">편집 시작</button>
+        <button class="btn" id="home-hero-doc">책 펼치기</button>
+      </div>
+    </div>`;
+  page.appendChild(hero);
 
-  const features = [
-    { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="18" x="3" y="3" rx="1"/><rect width="7" height="18" x="14" y="3" rx="1"/></svg>', title: '칸반 보드', desc: '컬럼 단위로 카드의 흐름을 관리합니다. 드래그앤드롭 지원.' },
-    { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>', title: '카드 뷰', desc: '같은 데이터를 그리드로 한눈에 보고, 태그·그룹·상태로 필터링합니다.' },
-    { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>', title: '리스트 뷰', desc: '정렬·일괄 작업·인쇄에 최적화된 테이블 형식.' },
-    { icon: ICONS_X.fileText, title: '문서뷰', desc: '마크다운 본문을 책처럼 읽고, 목차를 따라 자유롭게 이동합니다.' },
-    { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>', title: '내보내기 / 가져오기', desc: 'OL 파일(.html), 카드 JSON, 개별 마크다운으로 자유롭게 입출력합니다.' },
-    { icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>', title: '오프라인 우선', desc: '인터넷 없이도 동작합니다. 데이터는 브라우저 로컬과 파일 안에만 머뭅니다.' },
-  ];
+  const footer = ce('footer', 'home-footer');
+  footer.id = 'home-footer';
+  footer.innerHTML = `
+    <div class="home-footer-line">${escapeHTML(ORIGIN.tool)}</div>
+    <div class="home-footer-line">License: ${escapeHTML(ORIGIN.license)} · <a href="https://${ORIGIN.site}" target="_blank" rel="noopener">${escapeHTML(ORIGIN.site)}</a></div>
+    <div class="home-footer-line">Copyright ${escapeHTML(ORIGIN.copyright)}</div>`;
+  page.appendChild(footer);
 
-  const featLabel = ce('div','home-section-label','OL ATLAS · 기본 기능');
-  wrap.appendChild(featLabel);
-  const featGrid = ce('div','home-feat-grid');
-  features.forEach(f => {
-    const c = ce('div','home-feat-card');
-    c.innerHTML = `<span class="home-feat-icon">${f.icon}</span><div class="home-feat-title">${escapeHTML(f.title)}</div><div class="home-feat-desc">${escapeHTML(f.desc)}</div>`;
-    featGrid.appendChild(c);
-  });
-  wrap.appendChild(featGrid);
+  wrap.appendChild(page);
 
-  if (OL_PROJECTS && OL_PROJECTS.length) {
-    const extLabel = ce('div','home-section-label','올확장 · 콘텐츠 프로젝트');
-    extLabel.style.marginTop = '2.5rem';
-    wrap.appendChild(extLabel);
-    const projGrid = ce('div','home-proj-grid');
-    OL_PROJECTS.forEach(p => {
-      const a = document.createElement('a');
-      a.className = 'home-proj-card';
-      a.href = p.url || '#';
-      if (p.url && p.url !== '#') { a.target = '_blank'; a.rel = 'noopener'; }
-      a.innerHTML = `
-        <div class="home-proj-head"><span class="home-proj-tag">${escapeHTML(p.tag || '')}</span><div class="home-proj-title">${escapeHTML(p.name)}</div></div>
-        <div class="home-proj-desc">${escapeHTML(p.desc)}</div>
-        <span class="home-proj-arrow">${ICONS_X.chevronRight}</span>`;
-      projGrid.appendChild(a);
+  const brand = topbar.querySelector('.home-brand');
+  if (brand) {
+    const goHomeTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+    brand.addEventListener('click', goHomeTop);
+    brand.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        goHomeTop();
+      }
     });
-    wrap.appendChild(projGrid);
   }
 
-  const foot = ce('div','home-foot');
-  foot.innerHTML = `
-    <div>${escapeHTML(ORIGIN.tool)} · ${escapeHTML(ORIGIN.copyright)}</div>
-    <div>License: ${escapeHTML(ORIGIN.license)} · <a href="https://${ORIGIN.site}" target="_blank" rel="noopener">${escapeHTML(ORIGIN.site)}</a></div>`;
-  wrap.appendChild(foot);
-
-  document.getElementById('home-hero-start').onclick = () => switchView('kanban');
-  document.getElementById('home-hero-doc').onclick   = () => switchView('document');
-  document.getElementById('home-start-btn').onclick  = () => switchView('kanban');
+  document.getElementById('home-theme-toggle')?.addEventListener('click', toggleTheme);
+  document.getElementById('home-start-btn')?.addEventListener('click', () => switchView('kanban'));
+  document.getElementById('home-hero-start')?.addEventListener('click', () => switchView('kanban'));
+  document.getElementById('home-doc-btn')?.addEventListener('click', () => switchView('document'));
+  document.getElementById('home-hero-doc')?.addEventListener('click', () => switchView('document'));
+  document.getElementById('home-about-btn')?.addEventListener('click', () => switchView('about'));
+  document.getElementById('home-about-btn-2')?.addEventListener('click', () => switchView('about'));
 }
 
 subscribe('home', renderHome);

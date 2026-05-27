@@ -46,6 +46,18 @@ export function normalizeState(s) {
   if (!Array.isArray(s.meta.actLog))  s.meta.actLog  = [];
   if (s.meta.currentEditorId === undefined) s.meta.currentEditorId = null;
 
+  // bookInfo 정규화 (v0.0.5)
+  if (!s.meta.bookInfo || typeof s.meta.bookInfo !== 'object') s.meta.bookInfo = {};
+  const _bi = s.meta.bookInfo;
+  const _biDefaults = {
+    bookTitle: '', subtitle: '', author: '', translator: '',
+    publisher: '', publishedAt: '', revisedAt: '', bookVersion: '',
+    description: '', coverColor: '', language: 'ko', isbn: '',
+  };
+  Object.keys(_biDefaults).forEach(k => {
+    if (typeof _bi[k] === 'undefined') _bi[k] = _biDefaults[k];
+  });
+
   if (!Array.isArray(s.columns)) s.columns = [];
   if (!Array.isArray(s.cards)) s.cards = [];
   if (!Array.isArray(s.trash)) s.trash = [];

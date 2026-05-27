@@ -214,6 +214,75 @@ function _renderAboutInfo(wrap, esc) {
     toast('파일 정보가 저장되었습니다');
   };
 
+  // ── 책 정보 (bookInfo) 섹션 ───────────────────────────
+  wrap.insertAdjacentHTML('beforeend', `<div class="about-section-label" style="margin-top:1.5rem">책 정보</div>`);
+  const biCard = ce('div', 'about-meta-card');
+  const bi = S.meta.bookInfo || {};
+  biCard.innerHTML = `
+    <div class="about-bookinfo-warn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" style="width:1rem;height:1rem;flex-shrink:0;margin-top:0.125rem">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      이 책 정보는 배포 후에도 유지됩니다. 포크하여 배포하기 전 한 번만 정확하게 입력하세요.
+    </div>
+    <div class="about-bookinfo-grid">
+      <div class="field"><label>책 제목</label>
+        <input type="text" id="bi-bookTitle" value="${esc(bi.bookTitle)}" placeholder="예) 붓다스토리"></div>
+      <div class="field"><label>부제목</label>
+        <input type="text" id="bi-subtitle" value="${esc(bi.subtitle)}" placeholder="부제목 (선택)"></div>
+      <div class="field"><label>저자</label>
+        <input type="text" id="bi-author" value="${esc(bi.author)}" placeholder="저자명"></div>
+      <div class="field"><label>역자</label>
+        <input type="text" id="bi-translator" value="${esc(bi.translator)}" placeholder="역자명 (없으면 빈칸)"></div>
+      <div class="field"><label>출판/제작처</label>
+        <input type="text" id="bi-publisher" value="${esc(bi.publisher)}" placeholder="출판사 또는 제작처"></div>
+      <div class="field"><label>출판일</label>
+        <input type="text" id="bi-publishedAt" value="${esc(bi.publishedAt)}" placeholder="예) 2026-05"></div>
+      <div class="field"><label>개정일</label>
+        <input type="text" id="bi-revisedAt" value="${esc(bi.revisedAt)}" placeholder="예) 2026-06"></div>
+      <div class="field"><label>책 버전</label>
+        <input type="text" id="bi-bookVersion" value="${esc(bi.bookVersion)}" placeholder="예) 1.0.0"></div>
+      <div class="field" style="grid-column:1/-1"><label>한 줄 소개</label>
+        <textarea id="bi-description" rows="2" placeholder="책을 한 문장으로 소개해주세요"></textarea></div>
+      <div class="field"><label>언어</label>
+        <select id="bi-language">
+          ${['ko','en','zh','ja','other'].map(l =>
+            `<option value="${l}"${bi.language===l?' selected':''}>${l}</option>`
+          ).join('')}
+        </select></div>
+      <div class="field"><label>ISBN</label>
+        <input type="text" id="bi-isbn" value="${esc(bi.isbn)}" placeholder="ISBN (선택)"></div>
+    </div>
+    <div class="about-meta-actions" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+      <button class="btn pri sm" id="bi-save">저장</button>
+      <label style="display:flex;align-items:center;gap:0.375rem;font-size:0.8rem;cursor:pointer">
+        <input type="checkbox" id="bi-sync-title" style="cursor:pointer">
+        파일 제목도 책 제목으로 동기화
+      </label>
+    </div>
+  `;
+  wrap.appendChild(biCard);
+  document.getElementById('bi-description').value = bi.description || '';
+
+  document.getElementById('bi-save').onclick = () => {
+    const biFields = ['bookTitle','subtitle','author','translator','publisher',
+      'publishedAt','revisedAt','bookVersion','language','isbn'];
+    const newBi = {};
+    biFields.forEach(f => {
+      const el = document.getElementById('bi-' + f);
+      newBi[f] = el ? el.value.trim() : '';
+    });
+    newBi.description = (document.getElementById('bi-description').value || '').trim();
+    const patch = { bookInfo: newBi };
+    if (document.getElementById('bi-sync-title').checked && newBi.bookTitle) {
+      patch.title = newBi.bookTitle;
+    }
+    dispatch(updateMeta(patch));
+    toast('책 정보가 저장되었습니다');
+  };
+
   wrap.insertAdjacentHTML('beforeend', `<div class="about-section-label" style="margin-top:1.5rem">링크</div>`);
   const linksCard = ce('div', 'about-links-card');
   const GLOBE_ICO  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>';
@@ -224,7 +293,7 @@ function _renderAboutInfo(wrap, esc) {
   const links = [
     { icon: GLOBE_ICO,  label: '홈페이지', url: `https://${ORIGIN.site}`,      display: ORIGIN.site },
     { icon: GITHUB_ICO, label: 'GitHub',   url: `https://github.com/ol-project`, display: 'github.com/ol-project' },
-    { icon: MAIL_ICO,   label: '연락처',   url: `mailto:bingeoul@gmail.com`,   display: 'bingeoul@gmail.com' },
+    { icon: MAIL_ICO,   label: '연락처',   url: `mailto:biwoom.ol@gmail.com`,   display: 'biwoom.ol@gmail.com' },
   ];
 
   links.forEach(({ icon, label, url, display }) => {

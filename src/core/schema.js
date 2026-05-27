@@ -3,7 +3,7 @@
 
 import { devLog, devAssert } from './dev.js';
 
-const SCHEMA_CURRENT_VERSION = 9;
+const SCHEMA_CURRENT_VERSION = 10;
 
 const _schemaMigrators = {
   6: function(s) {
@@ -45,6 +45,23 @@ const _schemaMigrators = {
     if (!s.meta) s.meta = {};
     s.meta.schemaVersion = 9;
     if (!Array.isArray(s.meta.actLog)) s.meta.actLog = [];
+    return s;
+  },
+
+  9: function(s) {
+    devLog('MIGRATE', 'v9 → v10');
+    if (!s.meta) s.meta = {};
+    s.meta.schemaVersion = 10;
+    if (!s.meta.bookInfo || typeof s.meta.bookInfo !== 'object') s.meta.bookInfo = {};
+    const bi = s.meta.bookInfo;
+    const biDefaults = {
+      bookTitle: '', subtitle: '', author: '', translator: '',
+      publisher: '', publishedAt: '', revisedAt: '', bookVersion: '',
+      description: '', coverColor: '', language: 'ko', isbn: '',
+    };
+    Object.keys(biDefaults).forEach(k => {
+      if (typeof bi[k] === 'undefined') bi[k] = biDefaults[k];
+    });
     return s;
   },
 };

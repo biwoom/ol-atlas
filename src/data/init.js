@@ -61,15 +61,7 @@ export function boot() {
   queueRender('__all__');
   flushNow();
 
-  // 7. 마지막 뷰 복원 or kanban
-  let startView = 'kanban';
-  try {
-    const last = localStorage.getItem('ol_last_view');
-    if (last && ['kanban','cards','list','document','about'].includes(last)) {
-      startView = last;
-    }
-  } catch(_) {}
-
-  switchView(startView);
+  // 7. 첫 화면은 항상 홈 랜딩
+  switchView('home');
   devLog('BOOT', 'boot complete');
 }

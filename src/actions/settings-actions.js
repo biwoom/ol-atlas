@@ -62,10 +62,11 @@ function settingsReducer(state, action) {
 
     case META_UPDATE: {
       const { patch } = action.payload;
-      return {
-        ...state,
-        meta: Object.assign({}, state.meta, patch),
-      };
+      const newMeta = { ...state.meta, ...patch };
+      if (patch.bookInfo) {
+        newMeta.bookInfo = { ...state.meta.bookInfo, ...patch.bookInfo };
+      }
+      return { ...state, meta: newMeta };
     }
 
     case META_UPDATE_EDITORS: {

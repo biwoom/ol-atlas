@@ -14,7 +14,7 @@ export function makeDefault() {
       title:         'OL Weaving the Wisdom',
       created:       now,
       version:         '0.0.1',
-      schemaVersion:   9,
+      schemaVersion:   10,
       dirty:           false,
       lastSavedAt:     null,
       editors: [
@@ -33,6 +33,20 @@ export function makeDefault() {
       ],
       actLog:          [],
       currentEditorId: null,
+      bookInfo: {
+        bookTitle:   '',
+        subtitle:    '',
+        author:      '',
+        translator:  '',
+        publisher:   '',
+        publishedAt: '',
+        revisedAt:   '',
+        bookVersion: '',
+        description: '',
+        coverColor:  '',
+        language:    'ko',
+        isbn:        '',
+      },
     },
     settings: {
       theme:        (function(){ try { return localStorage.getItem('ol_theme') || 'system'; } catch(_){ return 'system'; } })(),
@@ -43,9 +57,9 @@ export function makeDefault() {
       activeTabId:  'board',
     },
     columns: [
-      { id: 1, title: '📥 수집',   color: '#1e4a6e' },
-      { id: 2, title: '🔍 검토중', color: '#b87820' },
-      { id: 3, title: '✅ 정리됨', color: '#2e6644' },
+      { id: 1, title: '😃 기획중',   color: 'rgb(99, 102, 241)' },
+      { id: 2, title: '🤓 검토중', color: 'rgb(245, 158, 11)' },
+      { id: 3, title: '😎 완료됨', color: 'rgb(34, 197, 94)' },
     ],
     cards: [
       {

@@ -114,7 +114,7 @@
   color: hsl(var(--muted-foreground));
   font-weight: 400;
   margin-left: 0.5rem;
-  /* display: none; */
+  display: none;
 }
 
 .dv-wrap {

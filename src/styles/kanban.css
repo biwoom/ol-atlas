@@ -21,7 +21,7 @@
 .view-bar {
   display: flex; align-items: center; gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  border-bottom: 1px solid hsl(var(--border));
+  /* border-bottom: 1px solid hsl(var(--border)); */
   background: hsl(var(--background));
   position: sticky; top: var(--header-h); z-index: 20;
   flex-wrap: wrap;
@@ -32,9 +32,9 @@
   font-weight: 600;
   color: hsl(var(--foreground));
   letter-spacing: -0.01em;
-  /* display: none; */
+  display: none;
 }
-.vb-spacer { flex: 1; min-width: 0.2rem; }
+/* .vb-spacer { flex: 1; min-width: 0.2rem; } */
 
 /* ── filter-sel: shadcn Select 스타일 ── */
 .filter-sel {
@@ -69,7 +69,7 @@
   border-radius: calc(var(--radius) - 4px);
   padding: 0.1875rem;
   height: 2rem;
-  /* display: none; */
+  display: none;
 }
 .vt-btn {
   display: inline-flex; align-items: center; justify-content: center;

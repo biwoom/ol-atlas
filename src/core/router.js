@@ -47,6 +47,7 @@ function _switchViewCore(v) {
   if (_viewChangeCb) _viewChangeCb(currentView, v);
 
   currentView = v;
+  document.body.classList.toggle('is-home', v === 'home');
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-' + v).classList.add('active');
   document.querySelectorAll('.h-nav-btn').forEach(b =>
@@ -143,4 +144,9 @@ export function routeFromHash() {
   } finally {
     _suppressHashUpdate = false;
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.switchView = switchView;
+  window.routeFromHash = routeFromHash;
 }
