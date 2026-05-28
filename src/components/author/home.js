@@ -130,7 +130,7 @@ function renderHome() {
   document.getElementById('home-theme-toggle')?.addEventListener('click', toggleTheme);
   document.getElementById('home-start-btn')?.addEventListener('click', () => switchView('kanban'));
   document.getElementById('home-hero-start')?.addEventListener('click', () => switchView('kanban'));
-  document.getElementById('home-doc-btn')?.addEventListener('click', () => switchView('document'));
+  document.getElementById('home-doc-btn')?.addEventListener('click', () => switchView('reader'));
   document.getElementById('home-hero-doc')?.addEventListener('click', () => switchView('document'));
   document.getElementById('home-about-btn')?.addEventListener('click', () => switchView('about'));
   document.getElementById('home-about-btn-2')?.addEventListener('click', () => switchView('about'));

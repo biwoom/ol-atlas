@@ -64,6 +64,7 @@ const CSS_FILES = [
   'styles/cardgrid.css',
   'styles/listview.css',
   'styles/docview.css',
+  'styles/reader.css',
   'styles/modal.css',
   'ui/confirm-modal.css',                  // Phase 7.x: 커스텀 모달
   'components/shared/dirty-indicator.css', // Phase 7.x: dirty 인디케이터

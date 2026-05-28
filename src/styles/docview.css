@@ -271,7 +271,7 @@
 .dv-go-btn {
   position: absolute;
   top: 0.25rem;
-  right: 2rem;            /* 편집 버튼 옆 */
+  right: 0.5rem;            /* 편집 버튼 옆 */
   display: inline-flex; align-items: center; justify-content: center;
   width: 1.5rem; height: 1.5rem;
   padding: 0;
@@ -495,66 +495,3 @@
   .dv-go-btn { opacity: 1; top: 0.5rem;}
 }
 
-/* ══════════════════════════════════════════
-   읽기 모드 토글 버튼
-══════════════════════════════════════════ */
-.dv-readmode-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0 0.5rem;
-}
-.dv-readmode-btn.active {
-  background: hsl(var(--primary) / 0.1);
-  border-color: hsl(var(--primary) / 0.4);
-  color: hsl(var(--primary));
-}
-
-/* ══════════════════════════════════════════
-   읽기 모드 (body.dv-read-mode)
-══════════════════════════════════════════ */
-body.dv-read-mode #header {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-body.dv-read-mode #header.peek {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-body.dv-read-mode #sidebar {
-  transform: translateX(-100%);
-  transition: transform 0.2s ease;
-}
-body.dv-read-mode #sidebar.peek {
-  transform: translateX(0);
-}
-
-/* 편집 관련 버튼 숨김 */
-body.dv-read-mode #dv-edit-btn,
-body.dv-read-mode #dv-edit-actions,
-body.dv-read-mode .dv-edit-actions { display: none !important; }
-
-/* 본문 레이아웃 — 읽기 최적화
-   .dv-layout이 flex이므로 block으로 해제 후 .dv-wrap에 직접 제한 적용 */
-body.dv-read-mode .dv-layout {
-  display: block;
-  max-width: none;
-  margin: 0;
-}
-body.dv-read-mode .dv-layout > .dv-wrap {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-/* TOC: 우측 fixed로 본문 중앙 정렬과 공존 */
-body.dv-read-mode .dv-toc {
-  position: fixed;
-  right: 1.5rem;
-  top: calc(var(--header-h, 56px) + 4rem);
-  width: 13rem;
-  max-height: calc(100vh - var(--header-h, 56px) - 6rem);
-}
-/* 1023px 이하: 기존 반응형 규칙에서 TOC 자동 숨김 (별도 처리 불필요) */

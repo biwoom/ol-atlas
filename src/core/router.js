@@ -61,6 +61,7 @@ function _switchViewCore(v) {
   if (v === 'document') queueRender('docview');
   if (v === 'home')     queueRender('home');
   if (v === 'trash')    queueRender('trash');
+  if (v === 'reader')   queueRender('reader');
 
   if (v !== 'home') {
     try { localStorage.setItem('ol_last_view', v); } catch(_) {}

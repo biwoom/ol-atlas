@@ -101,9 +101,9 @@
 }
 
 /* ── 우선순위 색상 (전역 적용: kb-card-bar / cg-card-prio / td-prio-dot) ── */
-.prio-high { background: hsl(var(--destructive)); }
-.prio-mid  { background: hsl(var(--warning)); }
-.prio-low  { background: hsl(var(--success)); }
+.prio-high { background: hsl(var(--kb-prio-high));}
+.prio-mid  { background: hsl(var(--kb-prio-mid));}
+.prio-low  { background: hsl(var(--kb-prio-low));}
 .lv-empty {
   padding: 0;
   border: none;

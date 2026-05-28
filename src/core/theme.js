@@ -7,6 +7,9 @@ const THEME_LABELS = {
   reading: '독서 모드',
 };
 
+const _themeChangeHooks = [];
+export function registerThemeChangeHook(fn) { _themeChangeHooks.push(fn); }
+
 function _resolveTheme(theme) {
   if (theme === 'dark' || theme === 'reading' || theme === 'light') return theme;
   if (theme === 'system') {
@@ -79,6 +82,7 @@ export function applyTheme(theme) {
   });
 
   _syncThemeControls(actual);
+  _themeChangeHooks.forEach(function(fn) { fn(actual); });
 }
 
 export function toggleTheme() {

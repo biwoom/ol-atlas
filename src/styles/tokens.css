@@ -91,3 +91,30 @@ html.reading,
   --warning:              38 60% 42%;
   --info:                 217 55% 40%;
 }
+
+/* ══════════════════════════════════════════
+   shadcn/ui DESIGN TOKENS (Phase 1)
+   HSL 변수 시스템 - 라이트/다크 모드 지원
+══════════════════════════════════════════ */
+:root {
+  /* ➕ [신규 추가] 칸반보드 무채색 시스템 (Light Mode) */
+  --kb-prio-high:         0 0% 9%;       /* 강한 블랙 계열 (--primary와 유사) */
+  --kb-prio-mid:          0 0% 45.1%;    /* 중간 회색 계열 (--muted-foreground) */
+  --kb-prio-low:          0 0% 92%;      /* 아주 연한 회색 계열 */
+}
+
+html.dark,
+:root.dark {
+  /* ➕ [신규 추가] 칸반보드 무채색 시스템 (Dark Mode) */
+  --kb-prio-high:         0 0% 98%;      /* 강한 화이트 계열 (--primary와 유사) */
+  --kb-prio-mid:          0 0% 63.9%;    /* 중간 회색 계열 (--muted-foreground) */
+  --kb-prio-low:          0 0% 25%;      /* 어두운 공간에서 살짝 감지되는 회색 */
+}
+
+html.reading,
+:root.reading {
+  /* ➕ [신규 추가] 칸반보드 무채색 시스템 (Reading Mode - 세피아 톤 순응) */
+  --kb-prio-high:         30 30% 20%;    /* 탁한 갈색/블랙 계열 */
+  --kb-prio-mid:          30 15% 45%;    /* 중간 톤 */
+  --kb-prio-low:          38 20% 86%;    /* 바탕색보다 아주 약간 어두운 톤 */
+}
